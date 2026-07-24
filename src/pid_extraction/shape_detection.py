@@ -67,11 +67,15 @@ def _classify(contour: np.ndarray, child_contours: list[np.ndarray]) -> str:
     return "unknown"
 
 
+MAX_CONTOUR_AREA_FRACTION = 0.2  # excludes the drawing's page border/frame
+
+
 def detect_shapes(image: np.ndarray) -> list[DetectedShape]:
     """Detect P&ID component symbols in a rendered diagram image (BGR or grayscale)."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if image.ndim == 3 else image
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     opened = cv2.morphologyEx(binary, cv2.MORPH_OPEN, OPENING_KERNEL)
+    max_area = image.shape[0] * image.shape[1] * MAX_CONTOUR_AREA_FRACTION
 
     contours, hierarchy = cv2.findContours(opened, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     if hierarchy is None:
@@ -90,7 +94,7 @@ def detect_shapes(image: np.ndarray) -> list[DetectedShape]:
         if hierarchy[idx][3] != -1:
             continue
         area = cv2.contourArea(contour)
-        if area < MIN_CONTOUR_AREA:
+        if area < MIN_CONTOUR_AREA or area > max_area:
             continue
         kind = _classify(contour, children_by_parent.get(idx, []))
         if kind == "unknown":

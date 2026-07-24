@@ -1,8 +1,11 @@
 """Generate synthetic P&ID + SOP fixtures for development and tests.
 
-These are NOT the real Interface assignment data — placeholders only, used to
-prove the pipeline runs end-to-end before the real diagram.pdf / sop.docx
-arrive. Swap them out at data/pid/diagram.pdf and data/sop/sop.docx.
+These are NOT the real Interface assignment data — deliberately simple
+placeholders, kept under tests/fixtures/ (separate from data/pid and data/sop,
+which hold the real assignment files) so the test suite has a small, fully
+controlled scene to assert exact behavior against, independent of how well the
+pipeline handles the real diagram's complexity (see README "Tested Against
+Real Data" for that).
 
 Scene (by design, to exercise every cross-reference finding type):
   T-101 (tank) -- P-101 (pump) -- V-101 (valve) -- FT-101 (instrument)
@@ -23,8 +26,9 @@ import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-PID_PATH = ROOT / "data" / "pid" / "diagram.pdf"
-SOP_PATH = ROOT / "data" / "sop" / "sop.docx"
+FIXTURES_DIR = ROOT / "tests" / "fixtures"
+PID_PATH = FIXTURES_DIR / "synthetic_diagram.pdf"
+SOP_PATH = FIXTURES_DIR / "synthetic_sop.docx"
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
