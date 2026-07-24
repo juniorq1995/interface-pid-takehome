@@ -162,6 +162,7 @@ was read. Tag prefix is authoritative because it's the real engineering data.
 | `TYPE_MISMATCH` | WARNING | SOP describes a component's type differently than the diagram classified it |
 | `UNRESOLVED_TAG` | WARNING | A symbol was detected but OCR couldn't read its tag |
 | `DESIGN_LIMIT_MISMATCH` (temperature) | WARNING | Same, for temperature — lower severity because temperature OCR proved noisier than pressure on the real drawing |
+| `DUPLICATE_TAG` | WARNING | Two or more distinct P&ID symbols resolved to the same tag — OCR/LLM ambiguity or a genuine duplicate, needs manual review |
 | `MISSING_IN_SOP` | INFO | A diagram component is never mentioned in the SOP |
 
 ## Tested Against Real Data
@@ -292,14 +293,40 @@ partial progress: **6 of 29 known valves on page 0 (20.7%)**, up from 2 via
 raster alone — see `evaluation/score_cv_accuracy.py` for the measured number,
 not an estimate.
 
-An equipment-vessel detector (the two large F-715A/F-715B tanks) was attempted
-the same way and abandoned after one probe: the first size/aspect heuristic's
-top hit was the title-block logo, not a vessel — a false lead caught immediately
-by rendering and looking, not shipped. Equipment coverage stays at 0% (see CV
-accuracy scoring below) and is left as a known gap rather than a rushed
-half-fix; a real attempt would need to locate a known vessel's exact PDF
-coordinates first and read its specific path signature off that, the same
-disciplined way the other two detectors were built, not a generic size sweep.
+### Vector-Based Equipment Detection — two real attempts, neither shipped
+
+An equipment-vessel detector (the two large F-715A/F-715B tanks) got two
+genuine attempts, both instructive, neither shipped:
+
+**Attempt 1** used a generic size/aspect heuristic. The top hit was the
+title-block logo, not a vessel — a false lead caught immediately by rendering
+and looking, and dropped before it went anywhere further.
+
+**Attempt 2** anchored off a known valve's coordinates (the same disciplined
+approach that worked for the other two detectors), found a candidate at
+(258.2, 494.4), 17.8×309.6pt in mediabox space, and rendered a generously
+*padded* crop around it that clearly showed vessel F-715A's domed bottom head —
+looked confirmed. It wasn't. The padding (60pt) was small relative to the
+candidate's actual long dimension (309.6pt), so the crop was really showing a
+wide swath of the drawing that happened to include the nearby vessel at its
+edge — not the target shape itself. Re-checked by rendering the *exact*,
+unpadded computed bounding box: it sat on a horizontal insulated drain pipe
+stroke at the bottom of the sheet, not the vessel at all. The real bug: under
+this document's 270° page rotation, mediabox width and height swap in the
+final rendered image (validated separately against the page border — see
+`vector_lines.py`'s docstring) — so a shape that's *tall* in the final render
+is *wide* in the pre-rotation mediabox coordinates get_drawings() returns, not
+narrow. My aspect filter had the axis backwards. Corrected the filter and
+re-searched (wide-in-mediabox, not narrow) — found nothing in a reasonable
+size range. Likely reason: unlike a valve bowtie or instrument circle, a vessel
+outline probably isn't one closed path at all — it's plausibly composed of
+several separate strokes (cylinder sides, domed head, flanges, nozzle stubs),
+which no single-path bounding-box heuristic can find as one shape.
+
+Equipment coverage stays at 0% (see CV accuracy scoring below). Reported
+honestly as two real, instructive failures — including the second one's own
+methodology mistake and how it was caught — rather than either skipping the
+attempt or shipping something that doesn't actually work.
 
 **Combined result: 65 components across all 3 real sheets**, up from 1 in the
 original raster-only attempt. (This number moved twice for two different
@@ -373,22 +400,30 @@ Tag recall went from 0.0 to 0.054 (2 correct: `DPI 715A`, `DPI 715B`) — real
 improvement, but far short of the ~100% individually-validated crop success
 rate reported earlier, because of a third real bug this scoring run surfaced:
 
-**A third real bug: LLM hallucination can silently merge two distinct
-components.** One bowtie shape's tag came back `FT-101` from the vision model —
-a well-formed ISA tag, but one that doesn't exist anywhere on this page (not in
-the false-positive list by accident; checked). Two consequences, both real: (1)
-`type_from_tag("FT-101")` resolves to `flow_transmitter` → coarse category
-`instrument`, so that shape's category silently flips from valve to instrument
-in the coverage count — the actual mechanism behind the 6/6 instrument number
-above, not a coincidence. (2) `graph_builder.build_graph` keys nodes by tag
-text, so if a second shape also resolves to `FT-101` (hallucination or a
-genuine misread), the two distinct physical symbols collapse into one graph
-node — silently, the same class of bug the independent Opus review already
-flagged in `cross_reference`'s duplicate-tag handling, just showing up here in
-graph construction instead. Not fixed in this pass (this session already fixed
-three other real bugs found by measurement rather than assumption — see
-`limit_check.py` and the multi-page merge fix above); noted here because
-finding it and not mentioning it would be worse than not finding it.
+**A third real bug, since fixed: LLM hallucination could silently merge two
+distinct components.** One bowtie shape's tag came back `FT-101` from the
+vision model — a well-formed ISA tag, but one that doesn't exist anywhere on
+this page (not in the false-positive list by accident; checked). Two
+consequences, both real: (1) `type_from_tag("FT-101")` resolves to
+`flow_transmitter` → coarse category `instrument`, so that shape's category
+silently flips from valve to instrument in the coverage count — the actual
+mechanism behind the 6/6 instrument number above, not a coincidence; this part
+is inherent to trusting a resolved tag over a shape-based fallback and isn't
+"fixed" so much as an accepted tradeoff. (2) `graph_builder.build_graph` used
+to key nodes by tag text, so a second shape resolving to the same `FT-101`
+(hallucination, or a genuine duplicate) would silently collapse into the first
+node — the same class of bug the independent Opus review flagged in
+`cross_reference`'s duplicate-tag handling, just surfacing here in graph
+construction too. **Fixed**: `build_graph` now disambiguates the node label for
+the 2nd+ shape sharing a tag (e.g. `P-101 (dup 2)`) while keeping the real
+`tag` attribute identical on both, and `cross_reference` was reworked to key
+its internal tag lookup as `tag -> list of nodes` instead of a plain dict (which
+silently dropped all but the last), plus a new `DUPLICATE_TAG` (WARNING)
+discrepancy category that surfaces the collision explicitly instead of hiding
+it. `TYPE_MISMATCH` and `CONNECTION_MISMATCH` were updated to check across
+every node sharing a tag, not just whichever one happened to survive. Pinned
+with a dedicated `test_graph_builder.py` (new — this core module had no direct
+unit tests before) plus updates to `test_crossref.py` and the Opus review file.
 
 ### Using the assignment's reference guide
 

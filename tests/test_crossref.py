@@ -65,6 +65,21 @@ def test_cross_reference_type_and_connection_mismatch():
 @pytest.mark.unit
 @pytest.mark.edge_case
 @pytest.mark.authored_claude_sonnet
+def test_cross_reference_duplicate_tag_edge_case():
+    graph = nx.Graph()
+    graph.add_node("P-101", tag="P-101", component_type="pump", symbol_kind="circle_triangle", ocr_raw_text="P-101", bbox=[0, 0, 1, 1])
+    graph.add_node("P-101 (dup 2)", tag="P-101", component_type="pump", symbol_kind="circle_triangle", ocr_raw_text="P-101", bbox=[5, 5, 1, 1])
+
+    findings = cross_reference(graph, SopFacts(referenced_tags={"P-101"}))
+    duplicate = [f for f in findings if f.category == "DUPLICATE_TAG"]
+    assert len(duplicate) == 1
+    assert duplicate[0].severity == "WARNING"
+    assert "P-101" in duplicate[0].message
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
 def test_cross_reference_unresolved_tag_edge_case():
     graph = nx.Graph()
     graph.add_node("UNLABELED-0", tag=None, component_type="unknown", symbol_kind="rectangle", ocr_raw_text="", bbox=[0, 0, 1, 1])

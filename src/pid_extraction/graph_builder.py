@@ -15,10 +15,22 @@ def build_graph(
 ) -> nx.Graph:
     graph = nx.Graph()
     tag_sources = tag_sources or {}
+    # nx.Graph nodes are keyed by label — two distinct shapes resolving to the
+    # same tag (OCR ambiguity, LLM hallucination, or a genuine duplicate tag on
+    # the drawing) would otherwise silently collapse into one node, losing a
+    # real physical component. Disambiguate the label for the 2nd+ occurrence
+    # while keeping `tag` identical on both, so cross_reference.py can still
+    # find and flag the collision (DUPLICATE_TAG) instead of hiding it.
+    tag_occurrences: dict[str, int] = {}
 
     for shape in shapes:
         tag, raw_text = tags.get(shape.shape_id, (None, ""))
-        label = tag or f"UNLABELED-{shape.shape_id}"
+        if tag is None:
+            label = f"UNLABELED-{shape.shape_id}"
+        else:
+            seen = tag_occurrences.get(tag, 0)
+            tag_occurrences[tag] = seen + 1
+            label = tag if seen == 0 else f"{tag} (dup {seen + 1})"
         component_type = (tag and type_from_tag(tag)) or SHAPE_TO_TYPE.get(shape.kind, "unknown")
         default_confidence = "ocr_matched" if tag else "unresolved"
         graph.add_node(

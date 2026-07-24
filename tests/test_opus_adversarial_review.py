@@ -46,16 +46,23 @@ def _mock_response(text):
 @pytest.mark.adversarial
 @pytest.mark.edge_case
 @pytest.mark.authored_claude_opus
-def test_cross_reference_duplicate_tag_nodes_collapse_silently():
-    # Two distinct symbols both OCR'd to the same tag: _graph_tags is keyed by
-    # tag, so the second silently overwrites the first — only one finding emitted.
+def test_cross_reference_duplicate_tag_nodes_now_flagged_not_silently_collapsed():
+    """Regression: originally, two distinct symbols both OCR'd to the same tag
+    were silently collapsed by _graph_tags (a plain dict keyed by tag, last
+    node wins) — only one MISSING_IN_SOP finding emitted, the other component
+    invisibly lost. Found by this independent review. Fixed in compare.py by
+    keying _graph_tags as tag -> list of nodes and emitting a new DUPLICATE_TAG
+    finding whenever more than one node shares a tag, instead of hiding it."""
     graph = nx.Graph()
     _node(graph, "sym1", "P-101", "pump")
     _node(graph, "sym2", "P-101", "pump")
 
     findings = cross_reference(graph, SopFacts())
     missing_in_sop = [f for f in findings if f.category == "MISSING_IN_SOP"]
-    assert len(missing_in_sop) == 1  # the duplicate is lost, not flagged as a collision
+    duplicate_tag = [f for f in findings if f.category == "DUPLICATE_TAG"]
+    assert len(missing_in_sop) == 1  # still one per-tag finding, not per-node
+    assert len(duplicate_tag) == 1  # but the collision itself is now surfaced
+    assert "sym1" in duplicate_tag[0].message and "sym2" in duplicate_tag[0].message
 
 
 @pytest.mark.unit
