@@ -1,6 +1,45 @@
 P&ID <-> SOP Cross-Reference Report
-Summary: 0 error(s), 28 warning(s), 0 info
+Summary: 0 error(s), 65 warning(s), 0 info
 
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1466, 1191, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1282, 878, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2167, 880, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2082, 1035, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1196, 1197, 46, 46] could not be OCR-matched to a tag (raw text: '7').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2321, 1197, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected bowtie symbol at bbox=[1405, 1265, 31, 30] could not be OCR-matched to a tag (raw text: '- 3').
+[WARNING] (UNRESOLVED_TAG) Detected bowtie symbol at bbox=[1405, 1145, 31, 30] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected bowtie symbol at bbox=[2167, 1265, 32, 30] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected bowtie symbol at bbox=[2167, 1143, 32, 32] could not be OCR-matched to a tag (raw text: '2').
+[WARNING] (UNRESOLVED_TAG) Detected bowtie symbol at bbox=[3161, 1963, 70, 19] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2218, 1229, 46, 46] could not be OCR-matched to a tag (raw text: '3').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2218, 1184, 46, 46] could not be OCR-matched to a tag (raw text: 'S').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1343, 933, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1342, 682, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2338, 681, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2338, 634, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2340, 562, 45, 45] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1241, 683, 46, 45] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1241, 934, 46, 46] could not be OCR-matched to a tag (raw text: 'K-').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1779, 342, 46, 46] could not be OCR-matched to a tag (raw text: 'S E').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2505, 694, 43, 51] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[658, 1769, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[966, 1446, 46, 46] could not be OCR-matched to a tag (raw text: 'E').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[965, 1446, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[966, 1548, 46, 46] could not be OCR-matched to a tag (raw text: '4').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[965, 1546, 46, 46] could not be OCR-matched to a tag (raw text: 'S').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[897, 1548, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[966, 1595, 46, 45] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[965, 1594, 46, 46] could not be OCR-matched to a tag (raw text: '4').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[897, 1593, 46, 46] could not be OCR-matched to a tag (raw text: 'E').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[897, 1446, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[966, 1501, 46, 46] could not be OCR-matched to a tag (raw text: '3B').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[965, 1501, 46, 46] could not be OCR-matched to a tag (raw text: '-').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[897, 1501, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1404, 487, 46, 46] could not be OCR-matched to a tag (raw text: '171D').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1405, 400, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1404, 398, 46, 46] could not be OCR-matched to a tag (raw text: '').
+[WARNING] (UNRESOLVED_TAG) Detected bowtie symbol at bbox=[3162, 1963, 70, 19] could not be OCR-matched to a tag (raw text: '').
 [WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1226, 1372, 38, 42] could not be OCR-matched to a tag (raw text: '').
 [WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1221, 1480, 50, 41] could not be OCR-matched to a tag (raw text: '').
 [WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[921, 1502, 46, 46] could not be OCR-matched to a tag (raw text: '747').
@@ -26,6 +65,4 @@ Summary: 0 error(s), 28 warning(s), 0 info
 [WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2559, 1358, 45, 45] could not be OCR-matched to a tag (raw text: 'Z').
 [WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[2782, 1397, 45, 45] could not be OCR-matched to a tag (raw text: '').
 [WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[427, 1666, 46, 46] could not be OCR-matched to a tag (raw text: '7 4').
-[WARNING] (UNRESOLVED_TAG) Detected bowtie symbol at bbox=[3162, 1963, 70, 19] could not be OCR-matched to a tag (raw text: '').
-[WARNING] (UNRESOLVED_TAG) Detected circle symbol at bbox=[1404, 398, 46, 46] could not be OCR-matched to a tag (raw text: '').
 [WARNING] (UNRESOLVED_TAG) Detected bowtie symbol at bbox=[3162, 1963, 70, 19] could not be OCR-matched to a tag (raw text: '').

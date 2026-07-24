@@ -1,0 +1,49 @@
+{
+  "pdf": "data/pid/diagram.pdf",
+  "page": 0,
+  "llm_ocr_assist": true,
+  "category_coverage": {
+    "instrument": {
+      "ground_truth_count": 6,
+      "detected_count": 5,
+      "coverage_pct": 83.3
+    },
+    "valve": {
+      "ground_truth_count": 29,
+      "detected_count": 0,
+      "coverage_pct": 0.0
+    },
+    "equipment": {
+      "ground_truth_count": 2,
+      "detected_count": 0,
+      "coverage_pct": 0.0
+    }
+  },
+  "tag_accuracy": {
+    "resolved_tags_reported": 3,
+    "ground_truth_tags": 37,
+    "true_positives": [
+      "DPI 715A",
+      "DPI 715B"
+    ],
+    "false_positives": [
+      "FT-101"
+    ],
+    "false_negatives_sample": [
+      "F-715A",
+      "F-715B",
+      "MV-715-01",
+      "MV-715-02",
+      "MV-715-02A",
+      "MV-715-02B",
+      "MV-715-03A",
+      "MV-715-03B",
+      "MV-715-04B",
+      "MV-715-05A"
+    ],
+    "false_negatives_count": 35,
+    "precision": 0.667,
+    "recall": 0.054,
+    "f1": 0.1
+  }
+}

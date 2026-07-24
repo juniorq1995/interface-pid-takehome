@@ -16,13 +16,14 @@ from src.pid_extraction.pdf_to_image import pdf_to_images
 from src.pid_extraction.shape_detection import detect_shapes
 from src.pid_extraction.vector_lines import extract_line_segments
 from src.pid_extraction.vector_symbols import extract_circle_symbols
+from src.pid_extraction.vector_valves import extract_valve_symbols
 
 
-def _merge_shapes(raster_shapes, vector_shapes):
+def _merge_shapes(raster_shapes, *vector_shape_lists):
     """Vector-detected symbols first (exact geometry, higher trust when both
     approaches overlap), then raster shapes, re-numbered into one shape_id space."""
     merged = []
-    for shape in [*vector_shapes, *raster_shapes]:
+    for shape in [*[s for lst in vector_shape_lists for s in lst], *raster_shapes]:
         merged.append(
             type(shape)(shape_id=len(merged), kind=shape.kind, bbox=shape.bbox, center=shape.center, contour=shape.contour)
         )
@@ -33,8 +34,9 @@ def _extract_page_graph(
     image, pdf_path: str | Path | None = None, page_index: int = 0, dpi: int = 200, llm_ocr_assist: bool = False
 ) -> nx.Graph:
     raster_shapes = detect_shapes(image)
-    vector_shapes = extract_circle_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
-    shapes = _merge_shapes(raster_shapes, vector_shapes)
+    circle_shapes = extract_circle_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
+    valve_shapes = extract_valve_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
+    shapes = _merge_shapes(raster_shapes, circle_shapes, valve_shapes)
 
     tags = {shape.shape_id: extract_tag(image, shape) for shape in shapes}
 
@@ -76,5 +78,14 @@ def extract_pid_graph_all_pages(pdf_path: str | Path, dpi: int = 200, llm_ocr_as
     images = pdf_to_images(pdf_path, dpi=dpi)
     combined = nx.Graph()
     for page_index, image in enumerate(images):
-        combined = nx.compose(combined, _extract_page_graph(image, pdf_path, page_index, dpi, llm_ocr_assist))
+        page_graph = _extract_page_graph(image, pdf_path, page_index, dpi, llm_ocr_assist)
+        # Unresolved shapes are labeled "UNLABELED-{shape_id}", and shape_id restarts
+        # at 0 on every page — without this, nx.compose silently merges same-labeled
+        # nodes from different pages, undercounting real components. Resolved tags
+        # are left alone (assumed unique across sheets, per the docstring above).
+        page_graph = nx.relabel_nodes(
+            page_graph,
+            {n: f"UNLABELED-P{page_index}-{n}" for n in page_graph.nodes if n.startswith("UNLABELED-")},
+        )
+        combined = nx.compose(combined, page_graph)
     return combined

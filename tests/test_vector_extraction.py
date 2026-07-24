@@ -5,6 +5,7 @@ import pytest
 from scripts.generate_sample_data import PID_PATH as SYNTHETIC_PID_PATH
 from src.pid_extraction.vector_lines import extract_line_segments
 from src.pid_extraction.vector_symbols import extract_circle_symbols
+from src.pid_extraction.vector_valves import extract_valve_symbols
 
 REAL_PID_PATH = Path(__file__).resolve().parent.parent / "data" / "pid" / "diagram.pdf"
 real_data_available = pytest.mark.skipif(not REAL_PID_PATH.exists(), reason="real assignment PDF not present")
@@ -43,6 +44,21 @@ def test_extract_circle_symbols_missing_file_failure_path(tmp_path: Path):
 
 
 @pytest.mark.integration
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_extract_valve_symbols_no_vector_data_edge_case():
+    assert extract_valve_symbols(SYNTHETIC_PID_PATH) == []
+
+
+@pytest.mark.integration
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_extract_valve_symbols_missing_file_failure_path(tmp_path: Path):
+    with pytest.raises(FileNotFoundError):
+        extract_valve_symbols(tmp_path / "nope.pdf")
+
+
+@pytest.mark.integration
 @pytest.mark.happy_path
 @pytest.mark.authored_claude_sonnet
 @real_data_available
@@ -70,3 +86,21 @@ def test_extract_circle_symbols_happy_path_real_pdf():
         assert shape.kind == "circle"
         _, _, w, h = shape.bbox
         assert 0.7 <= w / h <= 1.4  # near-square, matches the calibrated symbol band
+
+
+@pytest.mark.integration
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+@real_data_available
+def test_extract_valve_symbols_partial_recall_real_pdf():
+    # Only ~6/29 known valves on this page match the confirmed vector signature
+    # (most valve bowties are tessellated as part of their connecting pipe's
+    # vector path, not as isolated shapes — see README "Vector-Based Valve
+    # Detection"). This test pins the honest partial-recall count, not a claim
+    # of full coverage.
+    shapes = extract_valve_symbols(REAL_PID_PATH, page_index=0, dpi=300)
+    assert 1 <= len(shapes) <= 15
+    for shape in shapes:
+        assert shape.kind == "bowtie"
+        _, _, w, h = shape.bbox
+        assert 0.7 <= w / h <= 1.4

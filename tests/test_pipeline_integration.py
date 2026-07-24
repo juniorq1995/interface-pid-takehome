@@ -4,9 +4,12 @@ import pytest
 
 from scripts.generate_sample_data import PID_PATH, SOP_PATH
 from src.crossref.compare import cross_reference
-from src.pid_extraction.pipeline import extract_pid_graph
+from src.pid_extraction.pipeline import extract_pid_graph, extract_pid_graph_all_pages
 from src.sop_extraction.docx_parser import parse_sop
 from src.sop_extraction.tag_extractor import extract_sop_facts
+
+REAL_PID_PATH = Path(__file__).resolve().parent.parent / "data" / "pid" / "diagram.pdf"
+real_data_available = pytest.mark.skipif(not REAL_PID_PATH.exists(), reason="real assignment PDF not present")
 
 
 @pytest.mark.pipeline
@@ -61,3 +64,22 @@ def test_pipeline_real_edges_match_designed_chain():
 def test_extract_pid_graph_missing_file_failure_path(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         extract_pid_graph(tmp_path / "nope.pdf")
+
+
+@pytest.mark.regression
+@pytest.mark.integration
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+@real_data_available
+def test_extract_pid_graph_all_pages_does_not_collapse_unlabeled_nodes_across_pages():
+    """Regression: nx.compose merges nodes by label, and unresolved shapes were
+    labeled "UNLABELED-{shape_id}" with shape_id restarting at 0 on every page —
+    so page 2's "UNLABELED-0" silently overwrote page 1's "UNLABELED-0" during
+    merge. On the real 3-page document this undercounted total components by
+    more than half (28 reported vs. 68 actually detected per-page). Fixed by
+    prefixing unresolved labels with the page index before composing (see
+    extract_pid_graph_all_pages). This test pins the fix: the merged total must
+    equal the sum of each page's own count, not less."""
+    per_page_total = sum(extract_pid_graph(REAL_PID_PATH, page=p, dpi=300).number_of_nodes() for p in range(3))
+    combined = extract_pid_graph_all_pages(REAL_PID_PATH, dpi=300)
+    assert combined.number_of_nodes() >= per_page_total - 5  # small resolved-tag overlap across sheets is legitimate

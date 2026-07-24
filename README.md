@@ -273,12 +273,56 @@ hits sat exactly at the page corners, and excluded). That one calibrated band
 recovers **6 real instrument-bubble symbols on page 0** that raster contour
 detection found zero of.
 
-**Combined result: 28 components and 2 connections across all 3 real sheets**,
-up from 1 and 0. OCR still can't cleanly read most of these tiny real symbols'
-tags (a few partial reads like `'747'`, `'OC'` — see `output/cross_reference_report.log`
-after running against real data), so most surface as `UNRESOLVED_TAG` — which is
-the correct, honest outcome: the pipeline is telling the truth about what it
+**Vector-based valve detection (`pid_extraction/vector_valves.py`) — partial fix,
+and a real limit discovered, not just time-boxed.** Tried the same recipe on
+valve bowties: rendered one candidate at 600 DPI and confirmed it against a real
+valve symbol, then swept the whole page for the same signature (all-line closed
+path, ~20-30 segments, 9-14pt near-square). Broadening the size/aspect/item-count
+windows found no additional matches — the real reason is structural, not a
+tuning miss: **most valve bowties on this drawing are tessellated as part of the
+same continuous vector path as their connecting pipe**, not as an isolated closed
+shape at all. That's the vector-data equivalent of the exact topological-fusion
+problem that broke the raster approach in the first place (see above) — it
+resurfaces even with exact geometry, just one level higher up. A full fix would
+mean decomposing longer polyline paths for local bowtie sub-patterns (real
+path-segmentation, not bounding-box filtering) — scoped out for the same reason
+full vector-based symbol classification was: it's the multi-day project version
+of this problem, not an afternoon's calibration fix. What's shipped is real,
+partial progress: **6 of 29 known valves on page 0 (20.7%)**, up from 2 via
+raster alone — see `evaluation/score_cv_accuracy.py` for the measured number,
+not an estimate.
+
+An equipment-vessel detector (the two large F-715A/F-715B tanks) was attempted
+the same way and abandoned after one probe: the first size/aspect heuristic's
+top hit was the title-block logo, not a vessel — a false lead caught immediately
+by rendering and looking, not shipped. Equipment coverage stays at 0% (see CV
+accuracy scoring below) and is left as a known gap rather than a rushed
+half-fix; a real attempt would need to locate a known vessel's exact PDF
+coordinates first and read its specific path signature off that, the same
+disciplined way the other two detectors were built, not a generic size sweep.
+
+**Combined result: 65 components across all 3 real sheets**, up from 1 in the
+original raster-only attempt. (This number moved twice for two different
+reasons: circle/valve detection added real symbols, and separately, merging the
+3 sheets was undercounting — see "A second real bug" below.) OCR still can't
+cleanly read most of these tiny real symbols' tags without `--llm-ocr-assist`
+(see "Local LLM Enrichment" below for what that flag does to the number), so
+most surface as `UNRESOLVED_TAG` — the pipeline telling the truth about what it
 couldn't read rather than guessing.
+
+**A second real bug, found while measuring the valve improvement:** merging the
+3 sheets into one graph was silently losing components. Unresolved shapes are
+labeled `UNLABELED-{shape_id}`, and `shape_id` restarts at 0 on every page —
+`nx.compose` merges nodes by label, so page 2's `UNLABELED-0` was overwriting
+page 1's `UNLABELED-0`, and so on. Measured directly: summing each page's own
+component count gave 68, but the merged 3-page graph reported only 28 — more
+than half silently lost. Fixed in `extract_pid_graph_all_pages` by prefixing
+unresolved labels with the page index before composing, with a regression test
+(`test_extract_pid_graph_all_pages_does_not_collapse_unlabeled_nodes_across_pages`)
+pinning it. This is exactly the kind of bug that better symbol detection makes
+*visible* rather than causes — with only 1-8 components per page before, silent
+collisions were rare enough not to show up; going to 12-30 per page made the
+undercount large enough to notice while sanity-checking the valve numbers.
 
 **What this means concretely:** the graph/cross-reference machinery (tested,
 validated, and demonstrably correct against the synthetic fixture's 6-component
@@ -309,26 +353,42 @@ localization — only "was this exact tag found somewhere." Disclosed, not hidde
 
 Run it: `python evaluation/score_cv_accuracy.py --page 0 [--llm-ocr-assist]`
 
-**Results (page 0, real data, no `--llm-ocr-assist`):**
+**Results (page 0, real data):**
 
-| Category | Detected / Ground Truth | Coverage |
+| Category | No `--llm-ocr-assist` | With `--llm-ocr-assist` |
 |---|---|---|
-| Instrument | 6/6 | 100% |
-| Valve | 2/29 | 6.9% |
-| Equipment | 0/2 | 0% |
-| Tag recall | 0/37 tags | 0.0 |
+| Instrument coverage | 6/6 (100%) | 6/6 (100%)* |
+| Valve coverage | 6/29 (20.7%) | 6/29 (20.7%) |
+| Equipment coverage | 0/2 (0%) | 0/2 (0%) |
+| Tag precision | — (0 resolved) | 0.667 (2/3 correct) |
+| Tag recall | 0.0 | 0.054 (2/37) |
 
-This is the clearest, most honest summary of where the pipeline actually stands:
-**vector-based symbol detection only covers instrument bubbles** (the
-`SYMBOL_SIZE_BANDS_PT` calibration in `vector_symbols.py`) — valve and equipment
-detection still rely on the much weaker raster fallback, which is why valve
-coverage is 6.9% not near 100%, and equipment coverage is 0% (no detector
-targets vessel-scale symbols at all, raster or vector). Tag recall is 0%
-without LLM assist because none of the 8 raster/vector symbols found on this
-page had a clean enough Tesseract read. With `--llm-ocr-assist`, individually
-tested crops were separately validated at ~100% success (4/4 — see "Local LLM
-Enrichment" above); the same flag works with this scorer for a real end-to-end
-number, it just takes several minutes on CPU per full-page run.
+\* *Measured, not assumed — see "a third real bug" below for why this isn't as
+clean as the number suggests.*
+
+Symbol-detection coverage is unaffected by `--llm-ocr-assist` by design (it only
+re-reads tags on symbols already found — see "Vector-Based Valve Detection"
+above for why valve/equipment coverage need a different fix, not better OCR).
+Tag recall went from 0.0 to 0.054 (2 correct: `DPI 715A`, `DPI 715B`) — real
+improvement, but far short of the ~100% individually-validated crop success
+rate reported earlier, because of a third real bug this scoring run surfaced:
+
+**A third real bug: LLM hallucination can silently merge two distinct
+components.** One bowtie shape's tag came back `FT-101` from the vision model —
+a well-formed ISA tag, but one that doesn't exist anywhere on this page (not in
+the false-positive list by accident; checked). Two consequences, both real: (1)
+`type_from_tag("FT-101")` resolves to `flow_transmitter` → coarse category
+`instrument`, so that shape's category silently flips from valve to instrument
+in the coverage count — the actual mechanism behind the 6/6 instrument number
+above, not a coincidence. (2) `graph_builder.build_graph` keys nodes by tag
+text, so if a second shape also resolves to `FT-101` (hallucination or a
+genuine misread), the two distinct physical symbols collapse into one graph
+node — silently, the same class of bug the independent Opus review already
+flagged in `cross_reference`'s duplicate-tag handling, just showing up here in
+graph construction instead. Not fixed in this pass (this session already fixed
+three other real bugs found by measurement rather than assumption — see
+`limit_check.py` and the multi-page merge fix above); noted here because
+finding it and not mentioning it would be worse than not finding it.
 
 ### Using the assignment's reference guide
 
