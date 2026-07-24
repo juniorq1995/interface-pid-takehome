@@ -11,13 +11,16 @@ def build_graph(
     shapes: list[DetectedShape],
     tags: dict[int, tuple[str | None, str]],
     edges: list[tuple[int, int]],
+    tag_sources: dict[int, str] | None = None,
 ) -> nx.Graph:
     graph = nx.Graph()
+    tag_sources = tag_sources or {}
 
     for shape in shapes:
         tag, raw_text = tags.get(shape.shape_id, (None, ""))
         label = tag or f"UNLABELED-{shape.shape_id}"
         component_type = (tag and type_from_tag(tag)) or SHAPE_TO_TYPE.get(shape.kind, "unknown")
+        default_confidence = "ocr_matched" if tag else "unresolved"
         graph.add_node(
             label,
             shape_id=shape.shape_id,
@@ -26,7 +29,7 @@ def build_graph(
             symbol_kind=shape.kind,
             component_type=component_type,
             bbox=list(shape.bbox),
-            tag_confidence="ocr_matched" if tag else "unresolved",
+            tag_confidence=tag_sources.get(shape.shape_id, default_confidence),
         )
 
     id_to_label = {

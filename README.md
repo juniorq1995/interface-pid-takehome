@@ -20,6 +20,10 @@ sudo apt-get install tesseract-ocr   # Debian/Ubuntu
 brew install tesseract                # macOS
 ```
 
+Optional, only needed for `--llm-ocr-assist` (see "Local LLM Enrichment" below):
+[Ollama](https://ollama.com) running locally with `llama3.2-vision:11b` pulled
+(`ollama pull llama3.2-vision:11b`). Everything else runs with no Ollama at all.
+
 ## Run
 
 ```bash
@@ -258,14 +262,13 @@ documentation:
    was targeting the right glyph** — the real ISA symbol for a generic two-way
    valve is exactly the two-triangle "bowtie" `shape_detection.py` looks for.
 
-**Also surfaced, not yet acted on:** the guide's instrument-tag bubble layout
-(letter code stacked above the loop number inside the circle, e.g. `PI` over
-`715A`) matches how tags actually appear on the real diagram — and explains why
-OCR on those tiny circles reads poorly: `ocr_tagging.py`'s crop currently uses
-`--psm 7` (assume one line of text), which is the wrong mode for a two-line
-stacked label. Switching that crop to a multi-line PSM for vector-detected circle
-symbols specifically is a bounded, well-understood next step, not attempted here
-given time — noted honestly rather than left silently broken.
+**Also surfaced, and since addressed differently than first planned:** the
+guide's instrument-tag bubble layout (letter code stacked above the loop number
+inside the circle, e.g. `PI` over `715A`) matches how tags actually appear on the
+real diagram, and explains why Tesseract reads those tiny circles so poorly —
+`ocr_tagging.py`'s crop uses `--psm 7` (assume one line of text), the wrong mode
+for a two-line stacked label. Rather than tune Tesseract's PSM per symbol type,
+this ended up solved a different way — see "Local LLM Enrichment" below.
 
 If further symbol coverage is wanted (valves, pumps, equipment shapes — the guide
 has real glyphs for all of them, pages 7-12), it belongs in one place:
@@ -275,6 +278,56 @@ confirm the cluster against the guide's symbol, exclude false leads like the
 border ticks). Everything downstream (OCR tagging, connector matching, graph
 building, cross-referencing) is already agnostic to how a `DetectedShape` was
 produced.
+
+## Local LLM Enrichment (`--llm-ocr-assist`)
+
+`src/pid_extraction/llm_ocr_assist.py` adds an opt-in fallback: when deterministic
+OCR (Tesseract) can't read a symbol's tag, crop the region and ask a **local**
+Ollama vision model (`llama3.2-vision:11b`, already running on this machine — no
+API key, no hosted service, no data leaves the box) to read it directly from the
+pixels, instead of trying to correct Tesseract's already-mangled text. This is
+exactly the two-line stacked-bubble problem the reference guide surfaced above,
+just solved by giving the model the image instead of re-tuning Tesseract's PSM.
+
+**Validated on real data:** every one of the first 4 previously-unresolved
+instrument-bubble crops from page 0 was read correctly on retry — `PI 715A`,
+`PSV 715A`, `PI 715B`, and one earlier hit at `PSV 715B` — all well-formed ISA
+tags matching what's actually printed on that sheet. **Cost: real, not free** —
+this hardware takes 30-90 seconds per crop for the 11B vision model running on
+CPU, so it's wired as an explicit `--llm-ocr-assist` flag, not the default path.
+Deterministic OCR is always tried first; the model is only invoked for symbols it
+couldn't tag, and any network/model failure degrades to "still unresolved" rather
+than raising — this is strictly additive, never a regression risk to the base
+pipeline. Tests (`test_llm_ocr_assist.py`) mock the HTTP call so the suite stays
+fast and deterministic; nothing in CI depends on Ollama actually running.
+
+### Datasets pulled for future symbol-detection work (not part of this submission)
+
+Per your ask about locating labeled datasets and using the reference guide as
+one: three sources are staged under `datasets/` (gitignored — too large for this
+repo, and not needed to run the take-home itself):
+
+| Source | Size | Classes | Format | Notes |
+|---|---|---|---|---|
+| [`digitize-pid-yolo`](https://huggingface.co/datasets/hamzas/digitize-pid-yolo) (HF) | 500 synthetic P&IDs, 1.29GB | 32, **unlabeled** (figure-only in the paper, no text legend) | YOLO | Original source: [Paliwal et al. 2021](https://arxiv.org/abs/2109.03794) — paper PDF also saved under `datasets/papers/` |
+| P&ID Symbols R2 (Roboflow, `seipid`) | 2,742 real annotated images, 109MB | 180, **fully text-labeled** (e.g. "Gate Valve", "Pressure Transmitter") | YOLOv8 | CC BY 4.0. Far richer semantically than the synthetic set — the one to prioritize for actual symbol classification |
+| Kimray P&ID Reference Guide | 13 pages | N/A | PDF | The assignment's actual reference guide — used directly in code, see above, not just cited |
+
+The Roboflow set's 180 named classes are the natural training/reference source for
+extending `vector_symbols.py`/Phase 1 few-shot classification beyond instrument
+bubbles to valves and pumps specifically, since it has real class names to
+classify against rather than requiring manual visual inspection of the Digitize-PID
+figure.
+
+### Next: Phase 1 (few-shot symbol classification) — not yet built
+
+Same architecture as the LLM OCR assist above (crop → local vision model), applied
+to shape *type* instead of tag *text*: for raster-detected shapes currently
+classified `"unknown"`, show the crop plus a handful of labeled reference glyphs
+(from the Roboflow set or the Kimray guide's own symbol pages) and ask the model
+to classify. Not implemented in this session — flagged here rather than claimed
+done, since the honest-limitations discipline in this README should apply to R&D
+scope creep too, not just the original assignment.
 
 ## Limitations (honest, not hidden)
 

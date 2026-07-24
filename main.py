@@ -22,8 +22,8 @@ from src.sop_extraction.limits_table import extract_equipment_limits
 from src.sop_extraction.tag_extractor import extract_sop_facts
 
 
-def run(pid_path: Path, sop_path: Path, out_dir: Path) -> None:
-    graph = extract_pid_graph_all_pages(pid_path)
+def run(pid_path: Path, sop_path: Path, out_dir: Path, llm_ocr_assist: bool = False) -> None:
+    graph = extract_pid_graph_all_pages(pid_path, llm_ocr_assist=llm_ocr_assist)
     print(f"P&ID: extracted {graph.number_of_nodes()} components, {graph.number_of_edges()} connections")
 
     sop = parse_sop(sop_path)
@@ -51,8 +51,15 @@ def main() -> None:
     parser.add_argument("--pid", type=Path, default=Path("data/pid/diagram.pdf"))
     parser.add_argument("--sop", type=Path, default=Path("data/sop/sop.docx"))
     parser.add_argument("--out", type=Path, default=Path("output"))
+    parser.add_argument(
+        "--llm-ocr-assist",
+        action="store_true",
+        help="Use a local Ollama vision model to re-read tags Tesseract couldn't. "
+        "Slow (~30-90s per unresolved symbol on CPU) — opt-in, off by default. "
+        "Requires Ollama running locally with llama3.2-vision:11b pulled.",
+    )
     args = parser.parse_args()
-    run(args.pid, args.sop, args.out)
+    run(args.pid, args.sop, args.out, args.llm_ocr_assist)
 
 
 if __name__ == "__main__":

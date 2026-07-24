@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# R&D datasets for future symbol-detection work (see README "Next Steps") —
+# too large for this repo, not part of the take-home submission itself.
+datasets/
