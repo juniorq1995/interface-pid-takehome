@@ -232,16 +232,49 @@ verify in the time available, not a claim of full ISA symbol coverage. The
 design-limits cross-check above doesn't depend on any of this symbol-detection
 work at all, which is why it remains the fully-verified result on real data.
 
-**A note on the assignment's reference guide:** the assignment text mentions "a
-reference guide" for the P&ID components, but the link didn't survive the
-copy/paste into this conversation (only the anchor text came through) — I didn't
-have it while building any of the above. If a symbol reference sheet becomes
-available, it belongs in one place: recalibrating `SYMBOL_SIZE_BANDS_PT` in
-`vector_symbols.py` and extending it to cover valve/pump/other symbol classes the
-same empirical way (size-histogram the candidate vector paths, confirm the
-cluster against the reference, exclude false leads like the border ticks) —
-everything downstream (OCR tagging, connector matching, graph building,
-cross-referencing) is already agnostic to how a `DetectedShape` was produced.
+### Using the assignment's reference guide
+
+The assignment links a reference guide; the link didn't survive copy/paste into
+the working session that built the first version of this pipeline, so the initial
+symbol/tag work above was done without it. Once the actual link came through, it
+turned out to be Kimray's *P&ID Reference Guide* (based on ANSI/ISA-5.1-2009) —
+[kimray.com P&ID Reference Guide (PDF)](https://kimray.com/sites/default/files/uploads/training-demos/Kimray%20How%20to%20Read%20an%20Oil%20&%20Gas%20P&ID%20Reference%20Guide.pdf).
+Fetched and read directly, and it changed two real things in the code, not just
+documentation:
+
+1. **`component_types.py`'s tag table was wrong for real data, and the guide
+   explains exactly why.** It previously mapped bare `V-` to "valve." The guide's
+   ISA S5.1 instrument-letter table shows `V` as a first letter means *Vibration*,
+   not Valve — and separately, equipment prefixes (company/project convention, not
+   part of S5.1 at all) commonly use `V` for *Vessel*. Both readings independently
+   contradict "valve," and both are consistent with what the real document actually
+   shows: `V-745` is the NGL Stabilizer *Tower*, not a valve. Real valves on that
+   document are tagged `MV-` (motor/manual valve), which is now in the table. The
+   full instrument abbreviation list (`FT`, `PIC`, `LSH`, `TIC`, `DPIT`, ...) also
+   replaced the ~10-entry table with the guide's actual ISA S5.1 abbreviations —
+   this directly improves `TYPE_MISMATCH` cross-referencing accuracy, not just
+   labeling, since that check compares against this same table.
+2. **The guide's control-valve symbol page confirms the raster shape classifier
+   was targeting the right glyph** — the real ISA symbol for a generic two-way
+   valve is exactly the two-triangle "bowtie" `shape_detection.py` looks for.
+
+**Also surfaced, not yet acted on:** the guide's instrument-tag bubble layout
+(letter code stacked above the loop number inside the circle, e.g. `PI` over
+`715A`) matches how tags actually appear on the real diagram — and explains why
+OCR on those tiny circles reads poorly: `ocr_tagging.py`'s crop currently uses
+`--psm 7` (assume one line of text), which is the wrong mode for a two-line
+stacked label. Switching that crop to a multi-line PSM for vector-detected circle
+symbols specifically is a bounded, well-understood next step, not attempted here
+given time — noted honestly rather than left silently broken.
+
+If further symbol coverage is wanted (valves, pumps, equipment shapes — the guide
+has real glyphs for all of them, pages 7-12), it belongs in one place:
+`SYMBOL_SIZE_BANDS_PT` in `vector_symbols.py`, extended the same empirical way
+already used for instrument bubbles (size-histogram the candidate vector paths,
+confirm the cluster against the guide's symbol, exclude false leads like the
+border ticks). Everything downstream (OCR tagging, connector matching, graph
+building, cross-referencing) is already agnostic to how a `DetectedShape` was
+produced.
 
 ## Limitations (honest, not hidden)
 
