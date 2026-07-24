@@ -1,0 +1,49 @@
+{
+  "_methodology": "Hand-annotated by visual inspection of data/pid/diagram.pdf page 0 (F-715 A&B Particulate Filter Separator sheet) rendered at 150 DPI, cropped into quadrants for legibility. Not a claim of 100% exhaustiveness — a few valve tags near overlapping symbols were not confidently legible and are excluded rather than guessed (see 'excluded_uncertain' below). This is the ground truth CV accuracy is scored against in evaluation/score_cv_accuracy.py.",
+  "source_pdf": "data/pid/diagram.pdf",
+  "page_index": 0,
+  "components": [
+    {"tag": "PSV 715A", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "PSV 715B", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "PI 715A", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "PI 715B", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "DPI 715A", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "DPI 715B", "category": "instrument", "symbol": "circle_bubble"},
+
+    {"tag": "MV-715-01", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-02", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-02A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-02B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-03A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-03B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-04B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-05A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-05B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-06A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-06B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-07", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-08A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-08B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-09A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-09B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-10A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-10B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-11", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-12A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-12B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-13A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-13B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-14A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-14B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-15A", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-715-15B", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-720-01", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-720-04", "category": "valve", "symbol": "bowtie"},
+
+    {"tag": "F-715A", "category": "equipment", "symbol": "vessel"},
+    {"tag": "F-715B", "category": "equipment", "symbol": "vessel"}
+  ],
+  "excluded_uncertain": [
+    "A possible MV-715-04A (mirroring confirmed MV-715-04B) may exist near the F-715A nozzle but was obscured by an overlapping instrument bubble in the reviewed crop and isn't confirmed — excluded rather than guessed."
+  ]
+}

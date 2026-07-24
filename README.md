@@ -288,6 +288,48 @@ verify in the time available, not a claim of full ISA symbol coverage. The
 design-limits cross-check above doesn't depend on any of this symbol-detection
 work at all, which is why it remains the fully-verified result on real data.
 
+### CV accuracy scoring (`evaluation/`)
+
+Separate from the test suite: `evaluation/ground_truth_page0.json` is a
+hand-annotated list of every component I could confidently read off page 0 by
+eye (6 instrument bubbles, ~29 valve tags, 2 equipment vessels — methodology and
+what was excluded as unconfirmed documented in the file itself).
+`evaluation/score_cv_accuracy.py` runs the actual pipeline against page 0 and
+scores it against that ground truth on two separate axes — deliberately not
+blended into one number, because they're genuinely different failure modes:
+
+- **Category coverage** — did we find roughly the right *number* of symbols per
+  category, independent of whether we read their tags correctly.
+- **Tag accuracy** — precision/recall/F1 on exact tag text, only meaningful for
+  symbols the pipeline actually resolved a tag for.
+
+No pixel-level bounding-box ground truth exists (this was eyeballed from a
+rendered image, not annotated in a tool like CVAT/LabelImg), so this can't score
+localization — only "was this exact tag found somewhere." Disclosed, not hidden.
+
+Run it: `python evaluation/score_cv_accuracy.py --page 0 [--llm-ocr-assist]`
+
+**Results (page 0, real data, no `--llm-ocr-assist`):**
+
+| Category | Detected / Ground Truth | Coverage |
+|---|---|---|
+| Instrument | 6/6 | 100% |
+| Valve | 2/29 | 6.9% |
+| Equipment | 0/2 | 0% |
+| Tag recall | 0/37 tags | 0.0 |
+
+This is the clearest, most honest summary of where the pipeline actually stands:
+**vector-based symbol detection only covers instrument bubbles** (the
+`SYMBOL_SIZE_BANDS_PT` calibration in `vector_symbols.py`) — valve and equipment
+detection still rely on the much weaker raster fallback, which is why valve
+coverage is 6.9% not near 100%, and equipment coverage is 0% (no detector
+targets vessel-scale symbols at all, raster or vector). Tag recall is 0%
+without LLM assist because none of the 8 raster/vector symbols found on this
+page had a clean enough Tesseract read. With `--llm-ocr-assist`, individually
+tested crops were separately validated at ~100% success (4/4 — see "Local LLM
+Enrichment" above); the same flag works with this scorer for a real end-to-end
+number, it just takes several minutes on CPU per full-page run.
+
 ### Using the assignment's reference guide
 
 The assignment links a reference guide; the link didn't survive copy/paste into
