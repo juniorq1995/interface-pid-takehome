@@ -32,6 +32,11 @@
   {
     "severity": "WARNING",
     "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[1446, 838, 48, 91] could not be OCR-matched to a tag (raw text: '')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
     "message": "Detected bowtie symbol at bbox=[1405, 1265, 31, 30] could not be OCR-matched to a tag (raw text: '- 3')."
   },
   {
@@ -48,6 +53,31 @@
     "severity": "WARNING",
     "category": "UNRESOLVED_TAG",
     "message": "Detected bowtie symbol at bbox=[2167, 1143, 32, 32] could not be OCR-matched to a tag (raw text: '2')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[1390, 1820, 129, 53] could not be OCR-matched to a tag (raw text: 'TO S')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[1698, 832, 32, 330] could not be OCR-matched to a tag (raw text: '3')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[2345, 604, 58, 326] could not be OCR-matched to a tag (raw text: '')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected rectangle symbol at bbox=[1340, 1066, 67, 291] could not be OCR-matched to a tag (raw text: '')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected rectangle symbol at bbox=[2195, 1066, 69, 291] could not be OCR-matched to a tag (raw text: '')."
   },
   {
     "severity": "WARNING",
@@ -192,6 +222,16 @@
   {
     "severity": "WARNING",
     "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[3130, 362, 129, 53] could not be OCR-matched to a tag (raw text: '-')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[264, 1532, 129, 63] could not be OCR-matched to a tag (raw text: 'SE')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
     "message": "Detected bowtie symbol at bbox=[3162, 1963, 70, 19] could not be OCR-matched to a tag (raw text: '')."
   },
   {
@@ -318,6 +358,21 @@
     "severity": "WARNING",
     "category": "UNRESOLVED_TAG",
     "message": "Detected circle symbol at bbox=[427, 1666, 46, 46] could not be OCR-matched to a tag (raw text: '7 4')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[2358, 788, 18, 341] could not be OCR-matched to a tag (raw text: '')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[2395, 869, 44, 27] could not be OCR-matched to a tag (raw text: '')."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected bowtie symbol at bbox=[1458, 1973, 129, 53] could not be OCR-matched to a tag (raw text: 'FROM NSTRUME NT')."
   },
   {
     "severity": "WARNING",

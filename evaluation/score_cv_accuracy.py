@@ -51,7 +51,7 @@ def score(pdf_path: Path, page: int, ground_truth_path: Path, llm_ocr_assist: bo
     detected_by_category = Counter(d.get("component_type", "unknown") for _, d in graph.nodes(data=True))
     # Ground truth categories are coarse (instrument/valve/equipment); collapse
     # detected component_type (e.g. "pressure_indicator") the same way for a fair count.
-    coarse_map = {"instrument": "instrument", "valve": "valve", "safety_valve": "valve"}
+    coarse_map = {"instrument": "instrument", "valve": "valve", "safety_valve": "valve", "tank": "equipment"}
     from src.component_types import coarse_category
 
     detected_coarse = Counter()

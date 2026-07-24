@@ -93,14 +93,13 @@ def test_extract_circle_symbols_happy_path_real_pdf():
 @pytest.mark.authored_claude_sonnet
 @real_data_available
 def test_extract_valve_symbols_partial_recall_real_pdf():
-    # Only ~6/29 known valves on this page match the confirmed vector signature
-    # (most valve bowties are tessellated as part of their connecting pipe's
-    # vector path, not as isolated shapes — see README "Vector-Based Valve
+    # ~10/29 known valves on this page match the two confirmed vector signatures
+    # (isolated bowtie + fused pipe-valve — see README "Vector-Based Valve
     # Detection"). This test pins the honest partial-recall count, not a claim
-    # of full coverage.
+    # of full coverage. Fused-signature matches are the full pipe run's bbox,
+    # not a tight square around the bowtie, so aspect ratio isn't constrained
+    # the way the isolated-bowtie signature's near-square matches are.
     shapes = extract_valve_symbols(REAL_PID_PATH, page_index=0, dpi=300)
-    assert 1 <= len(shapes) <= 15
+    assert 1 <= len(shapes) <= 20
     for shape in shapes:
         assert shape.kind == "bowtie"
-        _, _, w, h = shape.bbox
-        assert 0.7 <= w / h <= 1.4

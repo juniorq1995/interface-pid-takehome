@@ -96,14 +96,14 @@
     {
       "shape_id": 6,
       "tag": null,
-      "ocr_raw_text": "- 3",
+      "ocr_raw_text": "",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
-        1405,
-        1265,
-        31,
-        30
+        1446,
+        838,
+        48,
+        91
       ],
       "tag_confidence": "unresolved",
       "id": "UNLABELED-P0-UNLABELED-6"
@@ -111,12 +111,12 @@
     {
       "shape_id": 7,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "- 3",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
         1405,
-        1145,
+        1265,
         31,
         30
       ],
@@ -130,9 +130,9 @@
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
-        2167,
-        1265,
-        32,
+        1405,
+        1145,
+        31,
         30
       ],
       "tag_confidence": "unresolved",
@@ -140,6 +140,21 @@
     },
     {
       "shape_id": 9,
+      "tag": null,
+      "ocr_raw_text": "",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        2167,
+        1265,
+        32,
+        30
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P0-UNLABELED-9"
+    },
+    {
+      "shape_id": 10,
       "tag": null,
       "ocr_raw_text": "2",
       "symbol_kind": "bowtie",
@@ -151,10 +166,85 @@
         32
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-9"
+      "id": "UNLABELED-P0-UNLABELED-10"
     },
     {
-      "shape_id": 10,
+      "shape_id": 11,
+      "tag": null,
+      "ocr_raw_text": "TO S",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        1390,
+        1820,
+        129,
+        53
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P0-UNLABELED-11"
+    },
+    {
+      "shape_id": 12,
+      "tag": null,
+      "ocr_raw_text": "3",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        1698,
+        832,
+        32,
+        330
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P0-UNLABELED-12"
+    },
+    {
+      "shape_id": 13,
+      "tag": null,
+      "ocr_raw_text": "",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        2345,
+        604,
+        58,
+        326
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P0-UNLABELED-13"
+    },
+    {
+      "shape_id": 14,
+      "tag": null,
+      "ocr_raw_text": "",
+      "symbol_kind": "rectangle",
+      "component_type": "tank",
+      "bbox": [
+        1340,
+        1066,
+        67,
+        291
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P0-UNLABELED-14"
+    },
+    {
+      "shape_id": 15,
+      "tag": null,
+      "ocr_raw_text": "",
+      "symbol_kind": "rectangle",
+      "component_type": "tank",
+      "bbox": [
+        2195,
+        1066,
+        69,
+        291
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P0-UNLABELED-15"
+    },
+    {
+      "shape_id": 16,
       "tag": null,
       "ocr_raw_text": "",
       "symbol_kind": "bowtie",
@@ -166,7 +256,7 @@
         19
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-10"
+      "id": "UNLABELED-P0-UNLABELED-16"
     },
     {
       "shape_id": 0,
@@ -576,6 +666,36 @@
     {
       "shape_id": 27,
       "tag": null,
+      "ocr_raw_text": "-",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        3130,
+        362,
+        129,
+        53
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P1-UNLABELED-27"
+    },
+    {
+      "shape_id": 28,
+      "tag": null,
+      "ocr_raw_text": "SE",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        264,
+        1532,
+        129,
+        63
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P1-UNLABELED-28"
+    },
+    {
+      "shape_id": 29,
+      "tag": null,
       "ocr_raw_text": "",
       "symbol_kind": "bowtie",
       "component_type": "valve",
@@ -586,7 +706,7 @@
         19
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-27"
+      "id": "UNLABELED-P1-UNLABELED-29"
     },
     {
       "shape_id": 0,
@@ -970,23 +1090,76 @@
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
+        2358,
+        788,
+        18,
+        341
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P2-UNLABELED-25"
+    },
+    {
+      "shape_id": 26,
+      "tag": null,
+      "ocr_raw_text": "",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        2395,
+        869,
+        44,
+        27
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P2-UNLABELED-26"
+    },
+    {
+      "shape_id": 27,
+      "tag": null,
+      "ocr_raw_text": "FROM NSTRUME NT",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        1458,
+        1973,
+        129,
+        53
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P2-UNLABELED-27"
+    },
+    {
+      "shape_id": 28,
+      "tag": null,
+      "ocr_raw_text": "",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
         3162,
         1963,
         70,
         19
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-25"
+      "id": "UNLABELED-P2-UNLABELED-28"
     }
   ],
   "edges": [
     {
-      "source": "UNLABELED-P0-UNLABELED-6",
-      "target": "UNLABELED-P0-UNLABELED-7"
+      "source": "UNLABELED-P0-UNLABELED-0",
+      "target": "UNLABELED-P0-UNLABELED-14"
     },
     {
-      "source": "UNLABELED-P0-UNLABELED-8",
-      "target": "UNLABELED-P0-UNLABELED-9"
+      "source": "UNLABELED-P0-UNLABELED-7",
+      "target": "UNLABELED-P0-UNLABELED-14"
+    },
+    {
+      "source": "UNLABELED-P0-UNLABELED-9",
+      "target": "UNLABELED-P0-UNLABELED-15"
+    },
+    {
+      "source": "UNLABELED-P1-UNLABELED-9",
+      "target": "UNLABELED-P1-UNLABELED-27"
     },
     {
       "source": "UNLABELED-P1-UNLABELED-19",
@@ -995,6 +1168,10 @@
     {
       "source": "UNLABELED-P2-UNLABELED-0",
       "target": "UNLABELED-P2-UNLABELED-1"
+    },
+    {
+      "source": "UNLABELED-P2-UNLABELED-25",
+      "target": "UNLABELED-P2-UNLABELED-26"
     }
   ]
 }

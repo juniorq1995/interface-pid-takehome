@@ -14,6 +14,7 @@ from src.pid_extraction.llm_ocr_assist import read_tag_with_llm
 from src.pid_extraction.ocr_tagging import extract_tag
 from src.pid_extraction.pdf_to_image import pdf_to_images
 from src.pid_extraction.shape_detection import detect_shapes
+from src.pid_extraction.vector_equipment import extract_vessel_symbols
 from src.pid_extraction.vector_lines import extract_line_segments
 from src.pid_extraction.vector_symbols import extract_circle_symbols
 from src.pid_extraction.vector_valves import extract_valve_symbols
@@ -36,7 +37,8 @@ def _extract_page_graph(
     raster_shapes = detect_shapes(image)
     circle_shapes = extract_circle_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
     valve_shapes = extract_valve_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
-    shapes = _merge_shapes(raster_shapes, circle_shapes, valve_shapes)
+    vessel_shapes = extract_vessel_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
+    shapes = _merge_shapes(raster_shapes, circle_shapes, valve_shapes, vessel_shapes)
 
     tags = {shape.shape_id: extract_tag(image, shape) for shape in shapes}
 

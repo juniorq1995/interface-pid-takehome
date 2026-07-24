@@ -274,68 +274,83 @@ hits sat exactly at the page corners, and excluded). That one calibrated band
 recovers **6 real instrument-bubble symbols on page 0** that raster contour
 detection found zero of.
 
-**Vector-based valve detection (`pid_extraction/vector_valves.py`) — partial fix,
-and a real limit discovered, not just time-boxed.** Tried the same recipe on
-valve bowties: rendered one candidate at 600 DPI and confirmed it against a real
-valve symbol, then swept the whole page for the same signature (all-line closed
-path, ~20-30 segments, 9-14pt near-square). Broadening the size/aspect/item-count
-windows found no additional matches — the real reason is structural, not a
-tuning miss: **most valve bowties on this drawing are tessellated as part of the
-same continuous vector path as their connecting pipe**, not as an isolated closed
-shape at all. That's the vector-data equivalent of the exact topological-fusion
-problem that broke the raster approach in the first place (see above) — it
-resurfaces even with exact geometry, just one level higher up. A full fix would
-mean decomposing longer polyline paths for local bowtie sub-patterns (real
-path-segmentation, not bounding-box filtering) — scoped out for the same reason
-full vector-based symbol classification was: it's the multi-day project version
-of this problem, not an afternoon's calibration fix. What's shipped is real,
-partial progress: **6 of 29 known valves on page 0 (20.7%)**, up from 2 via
-raster alone — see `evaluation/score_cv_accuracy.py` for the measured number,
-not an estimate.
+**Vector-based valve detection (`pid_extraction/vector_valves.py`) — two
+signatures, found in two passes.** First pass: rendered one candidate at 600
+DPI and confirmed it against a real valve symbol, then swept the page for the
+same signature (all-line closed path, ~20-30 segments, 9-14pt near-square).
+Broadening that search found nothing more — the real reason turned out to be
+structural: **most valve bowties on this drawing are tessellated as part of
+the same continuous vector path as their connecting pipe**, not as an
+isolated closed shape. Confirmed directly: rendering the candidate at
+`MV-715-02A`'s location showed the full pipe run, arrowhead, *and* bowtie as
+one 12-line-item path. That gave a second, distinct signature to search for —
+elongated all-line paths with a moderate (not pipe-thin) short dimension and
+exactly 12 items. Checked 4 real candidates matching it: 3 confirmed valves
+(`MV-715-10A`, `MV-715-10B`, one more), 1 false positive (an off-page
+destination-reference box, not a valve — different symbol, similar
+proportions). A nearby but distinct 7-item variant was checked too and turned
+out to be something else entirely (a drawing cross-reference flag near the
+row-number ladder) — excluded, not guessed into the detector. Combining both
+signatures: **10 of 29 known valves on page 0 (34.5%)**, up from 6 (20.7%),
+up from 2 via raster alone — measured via `evaluation/score_cv_accuracy.py`,
+not estimated. Still partial: the fused signature's bbox is the whole pipe
+run, not a tight crop around the bowtie itself, so OCR tag-reading against
+those specific matches is expected to be less reliable than for the isolated
+signature — disclosed in the module docstring, not smoothed over.
 
-### Vector-Based Equipment Detection — two real attempts, neither shipped
+### Vector-Based Equipment Detection — three attempts, the third one worked
 
-An equipment-vessel detector (the two large F-715A/F-715B tanks) got two
-genuine attempts, both instructive, neither shipped:
+An equipment-vessel detector (the two large F-715A/F-715B tanks) took three
+attempts. The first two failed instructively; the third is shipped and
+validated at 100% coverage on page 0.
 
 **Attempt 1** used a generic size/aspect heuristic. The top hit was the
-title-block logo, not a vessel — a false lead caught immediately by rendering
-and looking, and dropped before it went anywhere further.
+title-block logo, not a vessel — caught immediately by rendering, dropped.
 
-**Attempt 2** anchored off a known valve's coordinates (the same disciplined
-approach that worked for the other two detectors), found a candidate at
-(258.2, 494.4), 17.8×309.6pt in mediabox space, and rendered a generously
-*padded* crop around it that clearly showed vessel F-715A's domed bottom head —
-looked confirmed. It wasn't. The padding (60pt) was small relative to the
-candidate's actual long dimension (309.6pt), so the crop was really showing a
-wide swath of the drawing that happened to include the nearby vessel at its
-edge — not the target shape itself. Re-checked by rendering the *exact*,
-unpadded computed bounding box: it sat on a horizontal insulated drain pipe
-stroke at the bottom of the sheet, not the vessel at all. The real bug: under
-this document's 270° page rotation, mediabox width and height swap in the
-final rendered image (validated separately against the page border — see
-`vector_lines.py`'s docstring) — so a shape that's *tall* in the final render
-is *wide* in the pre-rotation mediabox coordinates get_drawings() returns, not
-narrow. My aspect filter had the axis backwards. Corrected the filter and
-re-searched (wide-in-mediabox, not narrow) — found nothing in a reasonable
-size range. Likely reason: unlike a valve bowtie or instrument circle, a vessel
-outline probably isn't one closed path at all — it's plausibly composed of
-several separate strokes (cylinder sides, domed head, flanges, nozzle stubs),
-which no single-path bounding-box heuristic can find as one shape.
+**Attempt 2** anchored off a known valve's coordinates, found a candidate,
+and rendered a generously *padded* crop that appeared to confirm vessel
+F-715A's domed bottom head. It didn't. The padding (60pt) was small relative
+to the candidate's own long dimension (309.6pt), so the crop was really
+showing a wide swath that happened to include the nearby vessel at its edge —
+not the target shape. Re-checked against the *exact* unpadded bbox: it sat on
+an unrelated horizontal pipe stroke. Root cause: this document's 270° page
+rotation swaps mediabox width/height in the final render, and the aspect
+filter had the axis backwards. Corrected and re-searched — found nothing in a
+reasonable range.
 
-Equipment coverage stays at 0% (see CV accuracy scoring below). Reported
-honestly as two real, instructive failures — including the second one's own
-methodology mistake and how it was caught — rather than either skipping the
-attempt or shipping something that doesn't actually work.
+**Attempt 3** took the lesson from attempt 2 seriously: verify tightly (small
+padding, so the crop can't be dominated by anything else) before trusting any
+candidate again. Searched for line-item-count clusters directly — no
+clustering, no size/aspect guessing — and found a distinctive 60-90-line-item
+signature in a plausible size band. A tight (8pt padding) render of the first
+match showed the *entire* vessel F-715A: flange, body, both dashed
+level-indicator lines, and the domed head, all in one compound stroked path.
+Checked the signature for a second match: found exactly one more, at the
+mirror position — rendered *that* tightly too, confirmed it was F-715B. Two
+signature matches, two real vessels, both independently verified before
+either was trusted. **Equipment coverage: 0% → 2/2 (100%)** on page 0,
+measured, not assumed. (Along the way, a spatial-clustering approach — the
+technique the actual [research literature](https://www.sciencedirect.com/science/article/abs/pii/S0166361523000350)
+recommends for compound symbols — was also tried and correctly abandoned
+after it suffered single-linkage "chaining" across unrelated regions once the
+gap tolerance was opened enough to bridge this drawing's dashed lines. It
+wasn't needed in the end: this vessel type turned out to already be one
+compound path, not several primitives requiring clustering — but the
+chaining failure mode is real and worth knowing about for a document where
+that assumption doesn't hold.)
 
-**Combined result: 65 components across all 3 real sheets**, up from 1 in the
-original raster-only attempt. (This number moved twice for two different
-reasons: circle/valve detection added real symbols, and separately, merging the
-3 sheets was undercounting — see "A second real bug" below.) OCR still can't
-cleanly read most of these tiny real symbols' tags without `--llm-ocr-assist`
-(see "Local LLM Enrichment" below for what that flag does to the number), so
-most surface as `UNRESOLVED_TAG` — the pipeline telling the truth about what it
-couldn't read rather than guessing.
+Scope, stated honestly: validated against this document's cylindrical-vessel
+style (F-715A/B) specifically. The other equipment types on this document
+(V-745 stabilizer tower, E-742 exchanger, AC-746 after-cooler) weren't
+checked and may use a different vector structure — not claimed to generalize
+past what was actually confirmed.
+
+**Combined result: 76 components and 7 connections across all 3 real
+sheets**, up from 1 and 0 in the original raster-only attempt. OCR still
+can't cleanly read most of these tiny real symbols' tags without
+`--llm-ocr-assist` (see "Local LLM Enrichment" below for what that flag does
+to the number), so most surface as `UNRESOLVED_TAG` — the pipeline telling
+the truth about what it couldn't read rather than guessing.
 
 **A second real bug, found while measuring the valve improvement:** merging the
 3 sheets into one graph was silently losing components. Unresolved shapes are
@@ -382,22 +397,21 @@ Run it: `python evaluation/score_cv_accuracy.py --page 0 [--llm-ocr-assist]`
 
 **Results (page 0, real data):**
 
-| Category | No `--llm-ocr-assist` | With `--llm-ocr-assist` |
-|---|---|---|
-| Instrument coverage | 6/6 (100%) | 6/6 (100%)* |
-| Valve coverage | 6/29 (20.7%) | 6/29 (20.7%) |
-| Equipment coverage | 0/2 (0%) | 0/2 (0%) |
-| Tag precision | — (0 resolved) | 0.667 (2/3 correct) |
-| Tag recall | 0.0 | 0.054 (2/37) |
-
-\* *Measured, not assumed — see "a third real bug" below for why this isn't as
-clean as the number suggests.*
+| Category | Coverage |
+|---|---|
+| Instrument coverage | 6/6 (100%) |
+| Valve coverage | 10/29 (34.5%) |
+| Equipment coverage | 2/2 (100%) |
 
 Symbol-detection coverage is unaffected by `--llm-ocr-assist` by design (it only
-re-reads tags on symbols already found — see "Vector-Based Valve Detection"
-above for why valve/equipment coverage need a different fix, not better OCR).
-Tag recall went from 0.0 to 0.054 (2 correct: `DPI 715A`, `DPI 715B`) — real
-improvement, but far short of the ~100% individually-validated crop success
+re-reads tags on symbols already found — see "Vector-Based Valve Detection" and
+"Vector-Based Equipment Detection" above for the actual detection-coverage fixes).
+The tag precision/recall numbers below are from an earlier pipeline state (before
+the valve/equipment detectors existed) and are kept for their own findings — the
+LLM-hallucination/tag-collision story — rather than re-run for a fresh number on
+every detector change; run `--llm-ocr-assist` yourself for a current one.
+Previously measured: tag recall went from 0.0 to 0.054 (2 correct: `DPI 715A`,
+`DPI 715B`) — real improvement, but far short of the ~100% individually-validated crop success
 rate reported earlier, because of a third real bug this scoring run surfaced:
 
 **A third real bug, since fixed: LLM hallucination could silently merge two
