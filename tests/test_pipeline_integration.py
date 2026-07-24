@@ -9,6 +9,10 @@ from src.sop_extraction.docx_parser import parse_sop
 from src.sop_extraction.tag_extractor import extract_sop_facts
 
 
+@pytest.mark.pipeline
+@pytest.mark.integration
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
 def test_full_pipeline_happy_path_finds_designed_discrepancies():
     graph = extract_pid_graph(PID_PATH)
     sop = parse_sop(SOP_PATH)
@@ -32,14 +36,28 @@ def test_full_pipeline_happy_path_finds_designed_discrepancies():
     assert "P-101 connects to V-101" not in messages
 
 
+@pytest.mark.regression
+@pytest.mark.integration
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
 def test_pipeline_real_edges_match_designed_chain():
+    """Regression: an earlier connector_detection.py implementation sampled straight-line
+    "ink coverage" between every pair of shape centers. On this fixture's inline chain
+    (T-101 - P-101 - V-101 - FT-101), that produced a spurious direct T-101<->FT-101 edge,
+    because the line between their centers passes straight through the two shapes between
+    them and reads as continuous ink. Fixed by masking symbol interiors and using Hough
+    line segments attached to their nearest symbol instead of raw center-to-center ink
+    sampling (see connector_detection.py docstring). This test pins that fix."""
     graph = extract_pid_graph(PID_PATH)
     assert graph.has_edge("T-101", "P-101")
     assert graph.has_edge("P-101", "V-101")
     assert graph.has_edge("V-101", "FT-101")
-    assert not graph.has_edge("T-101", "FT-101")  # would be a false "skip-ahead" edge
+    assert not graph.has_edge("T-101", "FT-101")  # would be the false "skip-ahead" edge
 
 
-def test_extract_pid_graph_missing_file_failure_case(tmp_path: Path):
+@pytest.mark.integration
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_extract_pid_graph_missing_file_failure_path(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         extract_pid_graph(tmp_path / "nope.pdf")

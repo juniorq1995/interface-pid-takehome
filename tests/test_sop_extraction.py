@@ -6,6 +6,9 @@ from src.sop_extraction.docx_parser import parse_sop
 from src.sop_extraction.tag_extractor import extract_sop_facts
 
 
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
 def test_extract_sop_facts_happy_path():
     text = "Open valve V-101 before starting pump P-101. V-101 connects to P-101."
     facts = extract_sop_facts(text)
@@ -16,6 +19,9 @@ def test_extract_sop_facts_happy_path():
     assert ("P-101", "V-101") in facts.stated_connections
 
 
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
 def test_extract_sop_facts_tag_without_type_keyword_edge_case():
     text = "Check T-101 during the morning walkdown."
     facts = extract_sop_facts(text)
@@ -25,13 +31,19 @@ def test_extract_sop_facts_tag_without_type_keyword_edge_case():
     assert facts.stated_connections == set()
 
 
-def test_extract_sop_facts_empty_text_failure_case():
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_extract_sop_facts_empty_text_edge_case():
     facts = extract_sop_facts("")
     assert facts.referenced_tags == set()
     assert facts.declared_types == {}
     assert facts.stated_connections == set()
 
 
+@pytest.mark.integration
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
 def test_parse_sop_missing_file_raises(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         parse_sop(tmp_path / "does_not_exist.docx")

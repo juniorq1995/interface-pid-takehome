@@ -10,26 +10,41 @@ REAL_PID_PATH = Path(__file__).resolve().parent.parent / "data" / "pid" / "diagr
 real_data_available = pytest.mark.skipif(not REAL_PID_PATH.exists(), reason="real assignment PDF not present")
 
 
+@pytest.mark.integration
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
 def test_extract_line_segments_no_vector_data_edge_case():
     # The synthetic fixture is a rasterized image embedded in a PDF — no vector
     # path data at all. Callers are expected to fall back to raster detection.
     assert extract_line_segments(SYNTHETIC_PID_PATH) == []
 
 
+@pytest.mark.integration
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
 def test_extract_circle_symbols_no_vector_data_edge_case():
     assert extract_circle_symbols(SYNTHETIC_PID_PATH) == []
 
 
-def test_extract_line_segments_missing_file_failure_case(tmp_path: Path):
+@pytest.mark.integration
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_extract_line_segments_missing_file_failure_path(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         extract_line_segments(tmp_path / "nope.pdf")
 
 
-def test_extract_circle_symbols_missing_file_failure_case(tmp_path: Path):
+@pytest.mark.integration
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_extract_circle_symbols_missing_file_failure_path(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         extract_circle_symbols(tmp_path / "nope.pdf")
 
 
+@pytest.mark.integration
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
 @real_data_available
 def test_extract_line_segments_happy_path_real_pdf():
     segments = extract_line_segments(REAL_PID_PATH, page_index=0, dpi=300)
@@ -44,6 +59,9 @@ def test_extract_line_segments_happy_path_real_pdf():
         assert length < 0.6 * page_width_px
 
 
+@pytest.mark.integration
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
 @real_data_available
 def test_extract_circle_symbols_happy_path_real_pdf():
     shapes = extract_circle_symbols(REAL_PID_PATH, page_index=0, dpi=300)

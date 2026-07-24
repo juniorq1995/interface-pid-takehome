@@ -1,3 +1,5 @@
+import pytest
+
 from src.sop_extraction.limits_table import extract_equipment_limits
 
 
@@ -10,6 +12,9 @@ def _table():
     ]
 
 
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
 def test_extract_equipment_limits_happy_path():
     limits = extract_equipment_limits([_table()])
 
@@ -17,6 +22,9 @@ def test_extract_equipment_limits_happy_path():
     assert limits["F-715"][0].temperature_f == "100"
 
 
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
 def test_extract_equipment_limits_keeps_multiple_rows_per_tag_edge_case():
     limits = extract_equipment_limits([_table()])
 
@@ -25,12 +33,18 @@ def test_extract_equipment_limits_keeps_multiple_rows_per_tag_edge_case():
     assert temps == {"375", "250"}
 
 
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
 def test_extract_equipment_limits_skips_table_without_pressure_or_temp_columns_edge_case():
     other_table = [["Name", "Notes"], ["F-715", "some note"]]
     limits = extract_equipment_limits([other_table])
     assert limits == {}
 
 
-def test_extract_equipment_limits_empty_input_failure_case():
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_extract_equipment_limits_empty_input_edge_case():
     assert extract_equipment_limits([]) == {}
     assert extract_equipment_limits([[]]) == {}
