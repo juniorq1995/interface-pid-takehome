@@ -57,15 +57,30 @@ def _nearest_shape(shapes: list[DetectedShape], point: tuple[float, float], max_
     return best
 
 
+def _edges_from_segments(
+    segments, shapes: list[DetectedShape], max_dist: float = ENDPOINT_MAX_DIST
+) -> list[tuple[int, int]]:
+    edges: set[tuple[int, int]] = set()
+    for (x1, y1), (x2, y2) in segments:
+        shape_a = _nearest_shape(shapes, (x1, y1), max_dist)
+        shape_b = _nearest_shape(shapes, (x2, y2), max_dist)
+        if shape_a is not None and shape_b is not None and shape_a.shape_id != shape_b.shape_id:
+            edges.add(tuple(sorted((shape_a.shape_id, shape_b.shape_id))))
+    return sorted(edges)
+
+
 def detect_connections(image: np.ndarray, shapes: list[DetectedShape]) -> list[tuple[int, int]]:
-    """Return deduped list of (shape_id, shape_id) edges inferred from detected pipe segments."""
+    """Raster fallback: mask symbol interiors, Hough-detect lines in what's left,
+    attach each segment's endpoints to the nearest symbol. Used when the PDF has
+    no vector path data (e.g. a scanned P&ID) — see vector_lines.py for the
+    exact-geometry path used when vector data is available."""
     if len(shapes) < 2:
         return []
 
     binary = _binarize(image)
     line_mask = _mask_symbol_interiors(binary, shapes)
 
-    segments = cv2.HoughLinesP(
+    hough_segments = cv2.HoughLinesP(
         line_mask,
         rho=1,
         theta=np.pi / 180,
@@ -73,14 +88,19 @@ def detect_connections(image: np.ndarray, shapes: list[DetectedShape]) -> list[t
         minLineLength=HOUGH_MIN_LINE_LENGTH,
         maxLineGap=HOUGH_MAX_LINE_GAP,
     )
-    if segments is None:
+    if hough_segments is None:
         return []
 
-    edges: set[tuple[int, int]] = set()
-    for (x1, y1, x2, y2) in segments[:, 0]:
-        shape_a = _nearest_shape(shapes, (x1, y1))
-        shape_b = _nearest_shape(shapes, (x2, y2))
-        if shape_a is not None and shape_b is not None and shape_a.shape_id != shape_b.shape_id:
-            edges.add(tuple(sorted((shape_a.shape_id, shape_b.shape_id))))
+    segments = [((x1, y1), (x2, y2)) for (x1, y1, x2, y2) in hough_segments[:, 0]]
+    return _edges_from_segments(segments, shapes)
 
-    return sorted(edges)
+
+def detect_connections_from_vector_segments(
+    segments: list[tuple[tuple[float, float], tuple[float, float]]], shapes: list[DetectedShape]
+) -> list[tuple[int, int]]:
+    """Same endpoint-to-symbol attachment as detect_connections, but for exact
+    vector-derived segments (src/pid_extraction/vector_lines.py) instead of
+    Hough-detected raster ones. No image/masking needed — the segments are exact."""
+    if len(shapes) < 2 or not segments:
+        return []
+    return _edges_from_segments(segments, shapes)
