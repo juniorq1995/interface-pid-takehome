@@ -1,0 +1,111 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "shape_id": 0,
+      "tag": "V-102",
+      "ocr_raw_text": "V-102",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        1105,
+        270,
+        91,
+        61
+      ],
+      "tag_confidence": "ocr_matched",
+      "id": "V-102"
+    },
+    {
+      "shape_id": 1,
+      "tag": "V-101",
+      "ocr_raw_text": "V-101",
+      "symbol_kind": "bowtie",
+      "component_type": "valve",
+      "bbox": [
+        604,
+        270,
+        93,
+        61
+      ],
+      "tag_confidence": "ocr_matched",
+      "id": "V-101"
+    },
+    {
+      "shape_id": 2,
+      "tag": "FT-101",
+      "ocr_raw_text": "FT-101",
+      "symbol_kind": "circle",
+      "component_type": "flow_transmitter",
+      "bbox": [
+        865,
+        265,
+        70,
+        71
+      ],
+      "tag_confidence": "ocr_matched",
+      "id": "FT-101"
+    },
+    {
+      "shape_id": 3,
+      "tag": "P-101",
+      "ocr_raw_text": "P-101",
+      "symbol_kind": "circle_triangle",
+      "component_type": "pump",
+      "bbox": [
+        355,
+        255,
+        91,
+        91
+      ],
+      "tag_confidence": "ocr_matched",
+      "id": "P-101"
+    },
+    {
+      "shape_id": 4,
+      "tag": "T-101",
+      "ocr_raw_text": "T-101",
+      "symbol_kind": "rectangle",
+      "component_type": "tank",
+      "bbox": [
+        90,
+        220,
+        122,
+        161
+      ],
+      "tag_confidence": "ocr_matched",
+      "id": "T-101"
+    },
+    {
+      "shape_id": 5,
+      "tag": null,
+      "ocr_raw_text": "S",
+      "symbol_kind": "rectangle",
+      "component_type": "tank",
+      "bbox": [
+        670,
+        100,
+        61,
+        51
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-5"
+    }
+  ],
+  "edges": [
+    {
+      "source": "V-101",
+      "target": "FT-101"
+    },
+    {
+      "source": "V-101",
+      "target": "P-101"
+    },
+    {
+      "source": "P-101",
+      "target": "T-101"
+    }
+  ]
+}

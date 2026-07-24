@@ -1,0 +1,27 @@
+[
+  {
+    "severity": "ERROR",
+    "category": "MISSING_IN_PID",
+    "message": "SOP references PSV-201, but no matching component was detected in the P&ID."
+  },
+  {
+    "severity": "ERROR",
+    "category": "CONNECTION_MISMATCH",
+    "message": "SOP states FT-101 connects to T-101, but no such connection was detected in the P&ID."
+  },
+  {
+    "severity": "WARNING",
+    "category": "TYPE_MISMATCH",
+    "message": "SOP describes T-101 as a pump, but the P&ID symbol was classified as tank."
+  },
+  {
+    "severity": "WARNING",
+    "category": "UNRESOLVED_TAG",
+    "message": "Detected rectangle symbol at bbox=[670, 100, 61, 51] could not be OCR-matched to a tag (raw text: 'S')."
+  },
+  {
+    "severity": "INFO",
+    "category": "MISSING_IN_SOP",
+    "message": "P&ID component V-102 is not referenced anywhere in the SOP."
+  }
+]

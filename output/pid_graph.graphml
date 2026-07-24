@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d6" for="node" attr.name="tag_confidence" attr.type="string"/>
+<key id="d5" for="node" attr.name="bbox" attr.type="string"/>
+<key id="d4" for="node" attr.name="component_type" attr.type="string"/>
+<key id="d3" for="node" attr.name="symbol_kind" attr.type="string"/>
+<key id="d2" for="node" attr.name="ocr_raw_text" attr.type="string"/>
+<key id="d1" for="node" attr.name="tag" attr.type="string"/>
+<key id="d0" for="node" attr.name="shape_id" attr.type="long"/>
+<graph edgedefault="undirected"><node id="V-102">
+  <data key="d0">0</data>
+  <data key="d1">V-102</data>
+  <data key="d2">V-102</data>
+  <data key="d3">bowtie</data>
+  <data key="d4">valve</data>
+  <data key="d5">[1105, 270, 91, 61]</data>
+  <data key="d6">ocr_matched</data>
+</node>
+<node id="V-101">
+  <data key="d0">1</data>
+  <data key="d1">V-101</data>
+  <data key="d2">V-101</data>
+  <data key="d3">bowtie</data>
+  <data key="d4">valve</data>
+  <data key="d5">[604, 270, 93, 61]</data>
+  <data key="d6">ocr_matched</data>
+</node>
+<node id="FT-101">
+  <data key="d0">2</data>
+  <data key="d1">FT-101</data>
+  <data key="d2">FT-101</data>
+  <data key="d3">circle</data>
+  <data key="d4">flow_transmitter</data>
+  <data key="d5">[865, 265, 70, 71]</data>
+  <data key="d6">ocr_matched</data>
+</node>
+<node id="P-101">
+  <data key="d0">3</data>
+  <data key="d1">P-101</data>
+  <data key="d2">P-101</data>
+  <data key="d3">circle_triangle</data>
+  <data key="d4">pump</data>
+  <data key="d5">[355, 255, 91, 91]</data>
+  <data key="d6">ocr_matched</data>
+</node>
+<node id="T-101">
+  <data key="d0">4</data>
+  <data key="d1">T-101</data>
+  <data key="d2">T-101</data>
+  <data key="d3">rectangle</data>
+  <data key="d4">tank</data>
+  <data key="d5">[90, 220, 122, 161]</data>
+  <data key="d6">ocr_matched</data>
+</node>
+<node id="UNLABELED-5">
+  <data key="d0">5</data>
+  <data key="d1"></data>
+  <data key="d2">S</data>
+  <data key="d3">rectangle</data>
+  <data key="d4">tank</data>
+  <data key="d5">[670, 100, 61, 51]</data>
+  <data key="d6">unresolved</data>
+</node>
+<edge source="V-101" target="FT-101"/>
+<edge source="V-101" target="P-101"/>
+<edge source="P-101" target="T-101"/>
+</graph></graphml>

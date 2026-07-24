@@ -1,0 +1,8 @@
+P&ID <-> SOP Cross-Reference Report
+Summary: 2 error(s), 2 warning(s), 1 info
+
+[ERROR] (MISSING_IN_PID) SOP references PSV-201, but no matching component was detected in the P&ID.
+[ERROR] (CONNECTION_MISMATCH) SOP states FT-101 connects to T-101, but no such connection was detected in the P&ID.
+[WARNING] (TYPE_MISMATCH) SOP describes T-101 as a pump, but the P&ID symbol was classified as tank.
+[WARNING] (UNRESOLVED_TAG) Detected rectangle symbol at bbox=[670, 100, 61, 51] could not be OCR-matched to a tag (raw text: 'S').
+[INFO] (MISSING_IN_SOP) P&ID component V-102 is not referenced anywhere in the SOP.
