@@ -18,27 +18,48 @@ from src.pid_extraction.vector_equipment import extract_vessel_symbols
 from src.pid_extraction.vector_lines import extract_line_segments
 from src.pid_extraction.vector_symbols import extract_circle_symbols
 from src.pid_extraction.vector_valves import extract_valve_symbols
+from src.pid_extraction.yolo_detector import (
+    class_name_to_component_type,
+    detect_symbols as detect_yolo_symbols,
+    weights_available,
+)
 
 
-def _merge_shapes(raster_shapes, *vector_shape_lists):
+def _merge_shapes(raster_shapes, *vector_shape_lists, yolo_shapes=()):
     """Vector-detected symbols first (exact geometry, higher trust when both
-    approaches overlap), then raster shapes, re-numbered into one shape_id space."""
+    approaches overlap), then raster shapes, then trained-model detections last,
+    re-numbered into one shape_id space. Returns (shapes, component_type_overrides)
+    — the overrides map maps a merged shape_id to the YOLO class's component_type,
+    since yolo_shapes' `kind` values (e.g. "gate_valve") aren't in the small
+    heuristic SHAPE_TO_TYPE vocabulary graph_builder falls back to."""
     merged = []
-    for shape in [*[s for lst in vector_shape_lists for s in lst], *raster_shapes]:
+    component_type_overrides: dict[int, str] = {}
+    ordered = [*[s for lst in vector_shape_lists for s in lst], *raster_shapes]
+    for shape in ordered:
         merged.append(
             type(shape)(shape_id=len(merged), kind=shape.kind, bbox=shape.bbox, center=shape.center, contour=shape.contour)
         )
-    return merged
+    for shape in yolo_shapes:
+        new_id = len(merged)
+        merged.append(
+            type(shape)(shape_id=new_id, kind=shape.kind, bbox=shape.bbox, center=shape.center, contour=shape.contour)
+        )
+        component_type_overrides[new_id] = class_name_to_component_type(shape.kind.replace("_", " "))
+    return merged, component_type_overrides
 
 
 def _extract_page_graph(
-    image, pdf_path: str | Path | None = None, page_index: int = 0, dpi: int = 200, llm_ocr_assist: bool = False
+    image, pdf_path: str | Path | None = None, page_index: int = 0, dpi: int = 200, llm_ocr_assist: bool = False,
+    use_yolo: bool = False,
 ) -> nx.Graph:
     raster_shapes = detect_shapes(image)
     circle_shapes = extract_circle_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
     valve_shapes = extract_valve_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
     vessel_shapes = extract_vessel_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
-    shapes = _merge_shapes(raster_shapes, circle_shapes, valve_shapes, vessel_shapes)
+    yolo_shapes = detect_yolo_symbols(image) if use_yolo and weights_available() else []
+    shapes, component_type_overrides = _merge_shapes(
+        raster_shapes, circle_shapes, valve_shapes, vessel_shapes, yolo_shapes=yolo_shapes
+    )
 
     tags = {shape.shape_id: extract_tag(image, shape) for shape in shapes}
 
@@ -63,24 +84,28 @@ def _extract_page_graph(
         # No vector path data (e.g. a scanned P&ID) or nothing matched — raster fallback.
         edges = detect_connections(image, shapes)
 
-    return build_graph(shapes, tags, edges, tag_sources)
+    return build_graph(shapes, tags, edges, tag_sources, component_type_overrides)
 
 
-def extract_pid_graph(pdf_path: str | Path, page: int = 0, dpi: int = 200, llm_ocr_assist: bool = False) -> nx.Graph:
+def extract_pid_graph(
+    pdf_path: str | Path, page: int = 0, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False
+) -> nx.Graph:
     images = pdf_to_images(pdf_path, dpi=dpi)
     if page >= len(images):
         raise ValueError(f"Requested page {page}, PDF only has {len(images)} page(s)")
-    return _extract_page_graph(images[page], pdf_path, page, dpi, llm_ocr_assist)
+    return _extract_page_graph(images[page], pdf_path, page, dpi, llm_ocr_assist, use_yolo)
 
 
-def extract_pid_graph_all_pages(pdf_path: str | Path, dpi: int = 200, llm_ocr_assist: bool = False) -> nx.Graph:
+def extract_pid_graph_all_pages(
+    pdf_path: str | Path, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False
+) -> nx.Graph:
     """Multi-sheet P&ID sets (e.g. the real Interface assignment PDF) are processed
     page by page and merged — component tags are assumed unique across sheets, which
     held for the real document tested against (see README)."""
     images = pdf_to_images(pdf_path, dpi=dpi)
     combined = nx.Graph()
     for page_index, image in enumerate(images):
-        page_graph = _extract_page_graph(image, pdf_path, page_index, dpi, llm_ocr_assist)
+        page_graph = _extract_page_graph(image, pdf_path, page_index, dpi, llm_ocr_assist, use_yolo)
         # Unresolved shapes are labeled "UNLABELED-{shape_id}", and shape_id restarts
         # at 0 on every page — without this, nx.compose silently merges same-labeled
         # nodes from different pages, undercounting real components. Resolved tags

@@ -91,7 +91,9 @@ def detect_connections(image: np.ndarray, shapes: list[DetectedShape]) -> list[t
     if hough_segments is None:
         return []
 
-    segments = [((x1, y1), (x2, y2)) for (x1, y1, x2, y2) in hough_segments[:, 0]]
+    # cv2.HoughLinesP's output ndim varies by OpenCV version: (N, 1, 4) on older
+    # builds, (N, 4) as of opencv 5.0 — reshape rather than assume either.
+    segments = [((x1, y1), (x2, y2)) for (x1, y1, x2, y2) in hough_segments.reshape(-1, 4)]
     return _edges_from_segments(segments, shapes)
 
 

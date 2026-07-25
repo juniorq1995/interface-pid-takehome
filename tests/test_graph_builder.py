@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from src.component_types import SHAPE_TO_TYPE
 from src.pid_extraction.graph_builder import build_graph
 from src.pid_extraction.shape_detection import DetectedShape
 
@@ -70,3 +71,42 @@ def test_build_graph_edges_attach_to_correct_shape_after_disambiguation():
     dup_label = next(label for label in graph.nodes if label.startswith("P-101 (dup"))
     assert graph.has_edge(dup_label, "T-1")
     assert not graph.has_edge("P-101", "T-1")
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+def test_build_graph_component_type_override_used_for_unlabeled_shape():
+    """A YOLO-detected shape has no OCR tag and a `kind` ("gate_valve") that
+    isn't in SHAPE_TO_TYPE's small heuristic vocabulary — without the override
+    it would silently resolve to "unknown", discarding the trained model's
+    class prediction."""
+    shapes = [_shape(0, kind="gate_valve")]
+    tags = {0: (None, "")}
+    graph = build_graph(shapes, tags, edges=[], component_type_overrides={0: "valve"})
+
+    assert graph.nodes["UNLABELED-0"]["component_type"] == "valve"
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_build_graph_tag_derived_type_takes_precedence_over_override_edge_case():
+    """If OCR/LLM resolved a real ISA tag on the same shape, that tag-derived
+    type is ground truth and must win over a YOLO class-based override."""
+    shapes = [_shape(0, kind="gate_valve")]
+    tags = {0: ("PT-101", "PT-101")}
+    graph = build_graph(shapes, tags, edges=[], component_type_overrides={0: "valve"})
+
+    assert graph.nodes["PT-101"]["component_type"] == "pressure_transmitter"
+
+
+@pytest.mark.unit
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_build_graph_missing_override_falls_back_to_shape_to_type_failure_path():
+    shapes = [_shape(0, kind="circle")]
+    tags = {0: (None, "")}
+    graph = build_graph(shapes, tags, edges=[], component_type_overrides={})
+
+    assert graph.nodes["UNLABELED-0"]["component_type"] == SHAPE_TO_TYPE["circle"]

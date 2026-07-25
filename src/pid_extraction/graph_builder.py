@@ -12,9 +12,17 @@ def build_graph(
     tags: dict[int, tuple[str | None, str]],
     edges: list[tuple[int, int]],
     tag_sources: dict[int, str] | None = None,
+    component_type_overrides: dict[int, str] | None = None,
 ) -> nx.Graph:
+    """component_type_overrides lets a caller supply a component_type directly
+    per shape_id (e.g. the trained YOLO detector's own class prediction),
+    bypassing the tag-prefix / SHAPE_TO_TYPE fallback below — that fallback's
+    vocabulary is small and specific to raster/vector heuristic shape kinds
+    ("circle", "bowtie", ...), not the ~180 specific class names a trained
+    model can produce."""
     graph = nx.Graph()
     tag_sources = tag_sources or {}
+    component_type_overrides = component_type_overrides or {}
     # nx.Graph nodes are keyed by label — two distinct shapes resolving to the
     # same tag (OCR ambiguity, LLM hallucination, or a genuine duplicate tag on
     # the drawing) would otherwise silently collapse into one node, losing a
@@ -31,7 +39,11 @@ def build_graph(
             seen = tag_occurrences.get(tag, 0)
             tag_occurrences[tag] = seen + 1
             label = tag if seen == 0 else f"{tag} (dup {seen + 1})"
-        component_type = (tag and type_from_tag(tag)) or SHAPE_TO_TYPE.get(shape.kind, "unknown")
+        component_type = (
+            (tag and type_from_tag(tag))
+            or component_type_overrides.get(shape.shape_id)
+            or SHAPE_TO_TYPE.get(shape.kind, "unknown")
+        )
         default_confidence = "ocr_matched" if tag else "unresolved"
         graph.add_node(
             label,
