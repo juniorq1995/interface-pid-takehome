@@ -532,6 +532,53 @@ to classify. Not implemented in this session — flagged here rather than claime
 done, since the honest-limitations discipline in this README should apply to R&D
 scope creep too, not just the original assignment.
 
+### Closing the Valve Gap Further — a real detector shipped, a technique tried and rejected
+
+After reaching 34.5% valve coverage (see "Vector-Based Valve Detection" above),
+tried to push further with two ideas: recovering raster's discarded "unknown"
+contours, and classifying candidate locations with the vision LLM.
+
+**Raster leftovers: dead end, checked not assumed.** All 6 contours page 0's
+raster pass discards as `"unknown"` were rendered and confirmed to be the
+title-block logo text — zero valve recall available there, consistent with
+everything else this session found about raster detection on this document.
+
+**LLM classification of pipe-endpoint candidates: built, tested, rejected as
+unreliable.** `vector_lines.py`'s 351 real pipe-segment endpoints are exactly
+where a missed valve would sit (a segment "ends" because it hits a symbol), so
+rather than blind tiling, candidates were generated from that exact geometry,
+filtered against the 16 already-detected shapes, and density-filtered to drop
+obvious decorative-pattern noise. That still left 76 candidates spanning a
+scoped-down region — during this, noticed a dense, evenly-spaced point pattern
+that turned out to be this drawing's scalloped "TUBING" coil symbol inflating
+the count.
+
+**Built `vector_noise.py` to fix that specifically** — the same disciplined
+loop as every other detector this session: found the coil's vector signature
+(chains of 8+ tiny 2-item bezier arcs), then rendered and visually confirmed
+all 5 detected instances individually before trusting the count. All 5 real.
+This is a genuine, tested, standalone detector, independent of what happened
+next.
+
+Ran the vision LLM (`llama3.2-vision:11b`) as a valve/not-valve classifier
+against all 76 candidates (coil-filtering came slightly after the run started,
+so this batch is the pre-filter set — see git history). Result: **73/76
+classified YES** — implausible on its face. Spot-checked 4 by rendering them
+directly: the model correctly rejected two obvious non-valves (bare text, a
+plain pipe crossing) but incorrectly accepted a coil-arc curve as a valve
+bowtie, and correctly accepted one genuinely new valve near `PSV-715A` that
+none of the vector signatures had found. That mix — real discriminating power
+on obvious cases, but an unreliable rate on the rest — means individual
+"YES" results can't be trusted without rendering and checking each one by
+hand, which defeats the point of automating the search. **Decision: did not
+add any of these results to the valve count.** Adding 73 unverified
+detections to hit a bigger coverage number would be exactly the kind of
+manufactured metric this whole project has been built to avoid — see the
+test-quality section above for the same principle applied to a different
+number. Valve coverage stays at 34.5%, now with a clearer, evidence-based
+understanding of why pushing further needs per-candidate verification, not a
+better prompt.
+
 ## Limitations (honest, not hidden)
 
 - Connector detection assumes straight or near-straight pipe runs and solid-fill
