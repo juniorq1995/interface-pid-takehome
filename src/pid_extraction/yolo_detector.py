@@ -24,8 +24,24 @@ import numpy as np
 
 from src.pid_extraction.shape_detection import DetectedShape
 
-DEFAULT_WEIGHTS_PATH = Path(__file__).resolve().parent.parent.parent / "datasets" / "runs" / "pid_valve_v1" / "weights" / "best.pt"
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+# ultralytics ignores a relative `project=` override and nests it under its own
+# `runs/detect/` default instead of using it as the run root directly — the
+# weights actually landed at runs/detect/datasets/runs/..., not datasets/runs/...
+# as the training command's `project=datasets/runs` argument implied.
+DEFAULT_WEIGHTS_PATH = _REPO_ROOT / "runs" / "detect" / "datasets" / "runs" / "pid_valve_v1" / "weights" / "best.pt"
 DEFAULT_CONFIDENCE = 0.25
+
+# The training set is Roboflow's own pre-cropped 640x640 tiles; our real P&ID
+# page renders at 3300x5100 (300 dpi). Feeding the whole page to the model in
+# one pass resizes it down to fit imgsz=640, shrinking valve-sized symbols to
+# a handful of pixels — confirmed by direct measurement: 5 raw detections on
+# the full page at conf=0.15, vs 19 raw (pre-merge) detections tiling the same
+# page into 640px crops. Tiling is only applied when the image is actually
+# larger than one tile — small test fixtures take the original single-pass path.
+TILE_SIZE = 640
+TILE_OVERLAP = 96
+MERGE_IOU_THRESHOLD = 0.5
 
 # Longest/most-specific keyword first within each category isn't required here —
 # checked as substring membership, category assignment is first-match-wins below.
@@ -66,6 +82,64 @@ def weights_available(weights_path: Path = DEFAULT_WEIGHTS_PATH) -> bool:
     return weights_path.exists()
 
 
+def _iter_tile_offsets(width: int, height: int, tile_size: int, overlap: int) -> list[tuple[int, int]]:
+    stride = tile_size - overlap
+    xs = list(range(0, max(width - tile_size, 0) + 1, stride)) or [0]
+    ys = list(range(0, max(height - tile_size, 0) + 1, stride)) or [0]
+    if xs[-1] + tile_size < width:
+        xs.append(width - tile_size)
+    if ys[-1] + tile_size < height:
+        ys.append(height - tile_size)
+    return [(x, y) for y in ys for x in xs]
+
+
+def _iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
+    ax0, ay0, ax1, ay1 = a
+    bx0, by0, bx1, by1 = b
+    ix0, iy0 = max(ax0, bx0), max(ay0, by0)
+    ix1, iy1 = min(ax1, bx1), min(ay1, by1)
+    if ix1 <= ix0 or iy1 <= iy0:
+        return 0.0
+    intersection = (ix1 - ix0) * (iy1 - iy0)
+    area_a = (ax1 - ax0) * (ay1 - ay0)
+    area_b = (bx1 - bx0) * (by1 - by0)
+    union = area_a + area_b - intersection
+    return intersection / union if union > 0 else 0.0
+
+
+def _merge_overlapping_detections(
+    detections: list[dict], iou_threshold: float = MERGE_IOU_THRESHOLD
+) -> list[dict]:
+    """Same symbol detected in more than one overlapping tile collapses to the
+    single highest-confidence box, regardless of predicted class — a detector
+    disagreeing with itself across tile boundaries on class but not location
+    is still one physical symbol, not two."""
+    ordered = sorted(detections, key=lambda d: d["confidence"], reverse=True)
+    kept: list[dict] = []
+    for det in ordered:
+        if any(_iou(det["xyxy"], other["xyxy"]) > iou_threshold for other in kept):
+            continue
+        kept.append(det)
+    return kept
+
+
+def _run_model(model, image: np.ndarray, confidence: float, offset: tuple[int, int] = (0, 0)) -> list[dict]:
+    ox, oy = offset
+    detections = []
+    for result in model.predict(image, conf=confidence, verbose=False):
+        names = result.names
+        for box in result.boxes:
+            x0, y0, x1, y1 = (int(v) for v in box.xyxy[0].tolist())
+            detections.append(
+                {
+                    "xyxy": (x0 + ox, y0 + oy, x1 + ox, y1 + oy),
+                    "class_name": names[int(box.cls[0].item())],
+                    "confidence": float(box.conf[0].item()),
+                }
+            )
+    return detections
+
+
 def detect_symbols(
     image: np.ndarray,
     weights_path: Path = DEFAULT_WEIGHTS_PATH,
@@ -76,7 +150,13 @@ def detect_symbols(
     to a lowercase, space-stripped version of the dataset class name (e.g.
     "gate_valve") — component_type is resolved separately via
     class_name_to_component_type, not derived from `kind` the way raster/vector
-    shapes elsewhere in this package derive it from a fixed small vocabulary."""
+    shapes elsewhere in this package derive it from a fixed small vocabulary.
+
+    Images larger than one tile are sliced into overlapping TILE_SIZE crops
+    (see module docstring for why: the model was trained on pre-cropped
+    640x640 tiles, and small P&ID symbols disappear if the whole page is
+    resized down to fit that size in a single pass) — detections are merged
+    back into full-image coordinates and deduplicated across tile overlaps."""
     if not weights_path.exists():
         raise FileNotFoundError(
             f"YOLO weights not found at {weights_path} — train the model first "
@@ -86,22 +166,27 @@ def detect_symbols(
     from ultralytics import YOLO  # deferred: heavy import, only needed when this path is used
 
     model = YOLO(str(weights_path))
-    results = model.predict(image, conf=confidence, verbose=False)
+    height, width = image.shape[:2]
+
+    if height <= TILE_SIZE and width <= TILE_SIZE:
+        detections = _run_model(model, image, confidence)
+    else:
+        detections = []
+        for x, y in _iter_tile_offsets(width, height, TILE_SIZE, TILE_OVERLAP):
+            crop = image[y : y + TILE_SIZE, x : x + TILE_SIZE]
+            detections.extend(_run_model(model, crop, confidence, offset=(x, y)))
+        detections = _merge_overlapping_detections(detections)
 
     shapes = []
-    for result in results:
-        names = result.names
-        for box in result.boxes:
-            x0, y0, x1, y1 = (int(v) for v in box.xyxy[0].tolist())
-            class_id = int(box.cls[0].item())
-            class_name = names[class_id]
-            shapes.append(
-                DetectedShape(
-                    shape_id=len(shapes),
-                    kind=class_name.lower().replace(" ", "_"),
-                    bbox=(x0, y0, x1 - x0, y1 - y0),
-                    center=((x0 + x1) // 2, (y0 + y1) // 2),
-                    contour=np.empty((0, 1, 2), dtype=np.int32),
-                )
+    for det in detections:
+        x0, y0, x1, y1 = det["xyxy"]
+        shapes.append(
+            DetectedShape(
+                shape_id=len(shapes),
+                kind=det["class_name"].lower().replace(" ", "_"),
+                bbox=(x0, y0, x1 - x0, y1 - y0),
+                center=((x0 + x1) // 2, (y0 + y1) // 2),
+                contour=np.empty((0, 1, 2), dtype=np.int32),
             )
+        )
     return shapes

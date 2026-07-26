@@ -579,6 +579,49 @@ number. Valve coverage stays at 34.5%, now with a clearer, evidence-based
 understanding of why pushing further needs per-candidate verification, not a
 better prompt.
 
+### Trained detector: YOLOv8 fine-tuned on Roboflow "P&ID Symbols R2" — real gain, one real bug caught along the way
+
+The heuristics above hit a ceiling because they're geometry signatures for a
+handful of specific symbol shapes; a trained object detector generalizes
+further. Fine-tuned `yolov8n` (via `ultralytics`) on Roboflow's public "P&ID
+Symbols R2" dataset (2,742 images, 180 ISA-subtype classes), 50 epochs,
+GPU-trained locally (`src/pid_extraction/yolo_detector.py`,
+`datasets/pid-symbols-r2/`, gitignored — R&D material, not part of the
+submission proper).
+
+**First real result was a false ceiling, not a true one.** Running the
+trained model on our actual page (a 3300x5100 render at 300 dpi) returned
+only **5 raw detections** even at a generously low 0.15 confidence threshold.
+Before concluding the model was simply bad, checked the training data itself:
+Roboflow's images are all pre-cropped to 640x640. Feeding our much larger
+page through in one pass resizes the whole page down to fit that size first —
+shrinking valve-sized symbols to a handful of pixels before the model ever
+sees them. Confirmed this diagnosis by tiling the same page into overlapping
+640px crops and re-running: raw detection count went 5 → 19 (pre-merge), a
+~4x jump from tiling alone. Implemented tiling with cross-tile IoU-based
+deduplication properly in `yolo_detector.py` rather than leaving it as a
+one-off script check.
+
+**Verified result, measured against the same hand-annotated ground truth as
+every other number in this README:**
+
+| Detector | Valve coverage |
+| --- | --- |
+| Vector heuristics only (baseline) | 34.5% (10/29) |
+| Vector heuristics + tiled YOLO ensemble | **58.6% (17/29)** |
+
+Equipment and instrument coverage were already 100% and stayed there — this
+result is specific to valves, which was always the weak category. Run it
+yourself: `python evaluation/score_cv_accuracy.py --use-yolo`.
+
+Per-class training metrics (on Roboflow's own validation split, not our
+document) are genuinely mixed — some valve subtypes like `Integrated Block
+Valve` and `Pneumatic-Diaphragm Gate Valve` reach mAP50 in the 0.67–0.75
+range, others (rare classes with a handful of validation instances) are near
+zero and statistically unreliable at that sample size. The 34.5%→58.6% number
+above is the one that actually matters — it's measured on the real assignment
+document, not the training distribution.
+
 ## Limitations (honest, not hidden)
 
 - Connector detection assumes straight or near-straight pipe runs and solid-fill
