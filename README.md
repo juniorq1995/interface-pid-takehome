@@ -640,16 +640,64 @@ Real, run-it-yourself result (`python evaluation/score_cv_accuracy.py --page 1
 | --- | --- | --- |
 | Equipment | 100% (2/2) | **0% (0/2)** |
 | Valve (heuristics only) | 34.5% (10/29) | 22.7% (5/22) |
-| Valve (+ tiled YOLO) | 58.6% (17/29) | **72.7% (16/22)** |
+| Valve (+ tiled 180-class YOLO) | 58.6% (17/29) | **72.7% (16/22)** |
 
-Two honest, opposite-direction findings, not cherry-picked: the vessel/equipment
-detector — validated thoroughly on page 0 — completely misses page 1's V-745
-vessel, meaning the "100% equipment coverage" claimed earlier was specific to
-that one page's rendering, not a general result. The trained YOLO detector, by
-contrast, generalizes *better* to page 1 than page 0 for valves. Neither result
-was assumed going in; both came from actually running the harness against new
-ground truth instead of re-testing the same page a training change was tuned
-against.
+The vessel/equipment detector — validated thoroughly on page 0 — completely
+misses page 1's V-745 vessel, meaning the "100% equipment coverage" claimed
+earlier was specific to that one page's rendering, not a general result. This
+particular gap (see "Retrained on a merged coarse-class dataset" below) is
+still real as of the coarse-class retrain.
+
+### A real bug in how these numbers were measured, caught and fixed
+
+While later retraining on a merged coarse-class dataset (below), every
+"checkpoint comparison" run through `extract_pid_graph` kept reporting the
+exact same 58.6%/72.7% numbers regardless of which trained model was actually
+being tested — suspicious enough to check rather than accept. Root cause: `
+detect_symbols`'s `weights_path` default argument is bound once, at function-
+definition time — reassigning `yolo_detector.DEFAULT_WEIGHTS_PATH` afterward
+(the monkeypatch pattern used to test different checkpoints) silently has no
+effect on any caller that doesn't pass `weights_path` explicitly, including
+`pipeline.py`'s own internal yolo call. Three separate "checkpoint comparisons"
+this session were actually all re-testing the original 180-class model.
+
+Fixed properly rather than worked around in a test script: `pipeline.py` now
+reads `yolo_detector.DEFAULT_WEIGHTS_PATH` as a live module attribute at call
+time, and `extract_pid_graph`/`extract_pid_graph_all_pages` both accept an
+explicit `yolo_weights_path` override — so swapping in a different trained
+checkpoint (for evaluation or otherwise) actually works, without relying on
+import-order-sensitive monkeypatching. Regression-tested
+(`test_extract_page_graph_picks_up_runtime_default_weights_path_change`).
+
+### Retrained on a merged coarse-class dataset — the real, correctly-measured result
+
+Re-ran the checkpoint comparisons after the fix. The corrected numbers are
+dramatically different from what had been reported:
+
+| Checkpoint | Page 0 valve | Page 1 valve | Page 1 equipment |
+| --- | --- | --- | --- |
+| Original 180-class model (Roboflow only) | 58.6% (17/29) | 72.7% (16/22) | 0% (0/2) |
+| **Coarse 3-class model** (Roboflow + Digitize-PID merged, see below) | **100% (29/29)** | **100% (22/22)** | 50% (1/2) |
+
+The coarse model (`yolo_detector.py`'s new shipped default) was trained on a
+merged dataset combining Roboflow "P&ID Symbols R2" with Digitize-PID (500
+synthetic full-page P&IDs), both relabeled down to the 3 categories this
+project's own ground truth actually distinguishes — valve/instrument/equipment
+— rather than either source's fine-grained taxonomy (32 and 180 classes
+respectively, neither of which this project needs). See "Closing the Valve Gap
+Further" below for the dataset-merge methodology and the visual class-mapping
+work Digitize-PID required (no public class-name mapping exists for it).
+
+**Valve coverage is now at the ceiling this count-based metric can measure**
+on both real pages. Raw detection counts run somewhat above ground truth (36
+and 39 vs. 29 and 22), so there are likely some false positives inflating the
+count — precision can't be verified without bounding-box ground truth (a
+disclosed limitation from the start of this evaluation). Equipment on page 1
+improved from 0% to 50% but isn't solved — the vessel-detection heuristic
+still doesn't generalize past page 0's specific rendering, and the coarse
+model's own equipment class had by far the least training data of the three
+categories (6,360 boxes vs. 35,885 for valve) since neither source dataset is
+equipment-heavy the way it's valve-heavy.
 
 ## Limitations (honest, not hidden)
 

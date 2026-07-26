@@ -18,6 +18,7 @@ from src.pid_extraction.vector_equipment import extract_vessel_symbols
 from src.pid_extraction.vector_lines import extract_line_segments
 from src.pid_extraction.vector_symbols import extract_circle_symbols
 from src.pid_extraction.vector_valves import extract_valve_symbols
+from src.pid_extraction import yolo_detector
 from src.pid_extraction.yolo_detector import (
     class_name_to_component_type,
     detect_symbols as detect_yolo_symbols,
@@ -50,13 +51,25 @@ def _merge_shapes(raster_shapes, *vector_shape_lists, yolo_shapes=()):
 
 def _extract_page_graph(
     image, pdf_path: str | Path | None = None, page_index: int = 0, dpi: int = 200, llm_ocr_assist: bool = False,
-    use_yolo: bool = False,
+    use_yolo: bool = False, yolo_weights_path: Path | None = None,
 ) -> nx.Graph:
     raster_shapes = detect_shapes(image)
     circle_shapes = extract_circle_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
     valve_shapes = extract_valve_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
     vessel_shapes = extract_vessel_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
-    yolo_shapes = detect_yolo_symbols(image) if use_yolo and weights_available() else []
+    # Read yolo_detector.DEFAULT_WEIGHTS_PATH as a live module attribute here
+    # rather than a bound default parameter — Python binds default argument
+    # values once at function-definition time, so relying on detect_symbols'
+    # own default (or importing the name directly) would silently ignore any
+    # later reassignment of yolo_detector.DEFAULT_WEIGHTS_PATH (a real bug
+    # this comment exists because of: it caused three checkpoint comparisons
+    # this session to silently re-test the same old model).
+    resolved_weights_path = yolo_weights_path or yolo_detector.DEFAULT_WEIGHTS_PATH
+    yolo_shapes = (
+        detect_yolo_symbols(image, resolved_weights_path)
+        if use_yolo and weights_available(resolved_weights_path)
+        else []
+    )
     shapes, component_type_overrides = _merge_shapes(
         raster_shapes, circle_shapes, valve_shapes, vessel_shapes, yolo_shapes=yolo_shapes
     )
@@ -88,16 +101,18 @@ def _extract_page_graph(
 
 
 def extract_pid_graph(
-    pdf_path: str | Path, page: int = 0, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False
+    pdf_path: str | Path, page: int = 0, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False,
+    yolo_weights_path: Path | None = None,
 ) -> nx.Graph:
     images = pdf_to_images(pdf_path, dpi=dpi)
     if page >= len(images):
         raise ValueError(f"Requested page {page}, PDF only has {len(images)} page(s)")
-    return _extract_page_graph(images[page], pdf_path, page, dpi, llm_ocr_assist, use_yolo)
+    return _extract_page_graph(images[page], pdf_path, page, dpi, llm_ocr_assist, use_yolo, yolo_weights_path)
 
 
 def extract_pid_graph_all_pages(
-    pdf_path: str | Path, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False
+    pdf_path: str | Path, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False,
+    yolo_weights_path: Path | None = None,
 ) -> nx.Graph:
     """Multi-sheet P&ID sets (e.g. the real Interface assignment PDF) are processed
     page by page and merged — component tags are assumed unique across sheets, which
@@ -105,7 +120,7 @@ def extract_pid_graph_all_pages(
     images = pdf_to_images(pdf_path, dpi=dpi)
     combined = nx.Graph()
     for page_index, image in enumerate(images):
-        page_graph = _extract_page_graph(image, pdf_path, page_index, dpi, llm_ocr_assist, use_yolo)
+        page_graph = _extract_page_graph(image, pdf_path, page_index, dpi, llm_ocr_assist, use_yolo, yolo_weights_path)
         # Unresolved shapes are labeled "UNLABELED-{shape_id}", and shape_id restarts
         # at 0 on every page — without this, nx.compose silently merges same-labeled
         # nodes from different pages, undercounting real components. Resolved tags

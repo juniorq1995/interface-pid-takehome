@@ -29,7 +29,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 # `runs/detect/` default instead of using it as the run root directly — the
 # weights actually landed at runs/detect/datasets/runs/..., not datasets/runs/...
 # as the training command's `project=datasets/runs` argument implied.
-DEFAULT_WEIGHTS_PATH = _REPO_ROOT / "runs" / "detect" / "datasets" / "runs" / "pid_valve_v1" / "weights" / "best.pt"
+DEFAULT_WEIGHTS_PATH = _REPO_ROOT / "runs" / "detect" / "datasets" / "runs" / "pid_coarse_v1" / "weights" / "best.pt"
 DEFAULT_CONFIDENCE = 0.25
 
 # The training set is Roboflow's own pre-cropped 640x640 tiles; our real P&ID
