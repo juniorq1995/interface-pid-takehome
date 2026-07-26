@@ -42,6 +42,23 @@ def test_class_name_to_component_type_maps_known_keyword():
     assert class_name_to_component_type("Horizontal Vessel") == "tank"
 
 
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_class_name_to_component_type_coarse_model_names_roundtrip_edge_case():
+    """Regression: the merged coarse-class model's exact 3 category names
+    ("valve"/"instrument"/"equipment") used to silently resolve to "unknown"
+    for "instrument" and "equipment" — neither contains any fine-grained
+    keyword ("meter", "tank", ...) as a substring, only "valve" roundtripped
+    by coincidence. This dropped every non-valve detection from that model's
+    real accuracy measurement before being caught."""
+    assert class_name_to_component_type("valve") == "valve"
+    assert class_name_to_component_type("instrument") == "instrument"
+    assert class_name_to_component_type("equipment") == "equipment"
+    assert class_name_to_component_type("Instrument") == "instrument"  # case-insensitive
+
+
 @pytest.mark.unit
 @pytest.mark.edge_case
 @pytest.mark.authored_claude_sonnet

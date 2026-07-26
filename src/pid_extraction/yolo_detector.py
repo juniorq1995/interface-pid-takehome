@@ -70,8 +70,22 @@ _KEYWORD_TO_TYPE = {
 }
 
 
+_COARSE_CLASS_NAMES = {"valve", "instrument", "equipment"}
+
+
 def class_name_to_component_type(class_name: str) -> str:
+    """Two different model taxonomies get fed through here: Roboflow's ~180
+    fine-grained ISA subtype names ("Gate Valve", "Pressure Transmitter", ...),
+    resolved by keyword substring below, and the merged coarse-class model's
+    exact 3 category names ("valve"/"instrument"/"equipment") — those must be
+    returned directly, since "instrument" and "equipment" don't contain any of
+    the fine-grained keywords as a substring and would otherwise silently
+    resolve to "unknown" (a real bug this comment exists because of: it
+    dropped every non-valve detection from the coarse model in initial
+    testing)."""
     lowered = class_name.lower()
+    if lowered in _COARSE_CLASS_NAMES:
+        return lowered
     for keyword, component_type in _KEYWORD_TO_TYPE.items():
         if keyword in lowered:
             return component_type
