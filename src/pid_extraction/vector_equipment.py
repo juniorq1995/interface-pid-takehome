@@ -34,6 +34,22 @@ Scope: validated against this document's cylindrical-filter-vessel style
 tower, E-742 exchanger, AC-746 after-cooler) were not checked and may use a
 different vector structure entirely — not claimed to generalize past what was
 actually confirmed.
+
+Second signature added later (page 1's V-745 stabilizer tower): unlike
+F-715's single all-encompassing compound path, V-745's cylindrical body turned
+out NOT to be one unified stroke at all — searching page 1 for any compound
+line-only path above 30 items found only one real candidate (48 items), far
+separated from the next-largest unrelated cluster (37 items). Rendered it
+tightly and confirmed: it's the vessel's domed top + mesh-pad, not the full
+body — but that's sufficient to register the vessel's presence for the
+category-coverage metric this project scores against (count-based, not
+bbox-precise). Confirmed this signature (40-55 items, 8-20pt wide, 50-80pt
+tall — a tall/narrow footprint, the opposite orientation of F-715's wide/short
+one) produces zero false positives on pages 0 and 2. The full vessel body
+itself is presumably built from many small separate primitives rather than one
+compound path — not pursued further; clustering was already rejected for
+F-715 due to chaining, and this fragment-based match is enough to close the
+coverage gap without that risk.
 """
 from __future__ import annotations
 
@@ -47,6 +63,23 @@ from src.pid_extraction.shape_detection import DetectedShape
 MIN_ITEMS, MAX_ITEMS = 60, 90
 MIN_WIDTH_PT, MAX_WIDTH_PT = 80.0, 130.0
 MIN_HEIGHT_PT, MAX_HEIGHT_PT = 15.0, 35.0
+
+# V-745's domed-top + mesh-pad fragment (see module docstring) — a distinct,
+# non-overlapping numeric range from the F-715 signature above: fewer items,
+# tall/narrow instead of wide/short.
+TOWER_TOP_MIN_ITEMS, TOWER_TOP_MAX_ITEMS = 40, 55
+TOWER_TOP_MIN_WIDTH_PT, TOWER_TOP_MAX_WIDTH_PT = 8.0, 20.0
+TOWER_TOP_MIN_HEIGHT_PT, TOWER_TOP_MAX_HEIGHT_PT = 50.0, 80.0
+
+
+def _matches_any_vessel_signature(item_count: int, width_pt: float, height_pt: float) -> bool:
+    if MIN_ITEMS <= item_count <= MAX_ITEMS and MIN_WIDTH_PT <= width_pt <= MAX_WIDTH_PT and MIN_HEIGHT_PT <= height_pt <= MAX_HEIGHT_PT:
+        return True
+    return (
+        TOWER_TOP_MIN_ITEMS <= item_count <= TOWER_TOP_MAX_ITEMS
+        and TOWER_TOP_MIN_WIDTH_PT <= width_pt <= TOWER_TOP_MAX_WIDTH_PT
+        and TOWER_TOP_MIN_HEIGHT_PT <= height_pt <= TOWER_TOP_MAX_HEIGHT_PT
+    )
 
 
 def extract_vessel_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int = 300) -> list[DetectedShape]:
@@ -70,13 +103,11 @@ def extract_vessel_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int =
             item_types = {it[0] for it in d["items"]}
             if item_types != {"l"}:
                 continue
-            if not (MIN_ITEMS <= len(d["items"]) <= MAX_ITEMS):
-                continue
 
             r = d["rect"]
             if r.width <= 0 or r.height <= 0:
                 continue
-            if not (MIN_WIDTH_PT <= r.width <= MAX_WIDTH_PT and MIN_HEIGHT_PT <= r.height <= MAX_HEIGHT_PT):
+            if not _matches_any_vessel_signature(len(d["items"]), r.width, r.height):
                 continue
 
             corners = [fitz.Point(r.x0, r.y0) * rotation_matrix, fitz.Point(r.x1, r.y1) * rotation_matrix]

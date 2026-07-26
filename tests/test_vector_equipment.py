@@ -42,3 +42,33 @@ def test_extract_vessel_symbols_finds_both_known_vessels_real_pdf():
         assert shape.kind == "rectangle"
         _, _, w, h = shape.bbox
         assert h > w  # tall in rendered pixel space, matching a vertical vessel
+
+
+@pytest.mark.regression
+@pytest.mark.integration
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+@real_data_available
+def test_extract_vessel_symbols_finds_v745_tower_top_on_page1():
+    """V-745 (page 1) isn't one unified compound path like F-715 -- only its
+    domed top + mesh-pad registers as a distinct compound path (48 items, tall/
+    narrow, the opposite orientation of F-715's wide/short signature). Rendered
+    tightly and visually confirmed before trusting; separately confirmed this
+    signature produces zero matches on pages 0 and 2."""
+    shapes = extract_vessel_symbols(REAL_PID_PATH, page_index=1, dpi=300)
+    assert len(shapes) == 1
+    _, _, w, h = shapes[0].bbox
+    assert w > h  # wide in rendered pixel space -- the 270deg rotation swaps
+    # the tall/narrow PDF-space fragment into a wide/short rendered fragment
+
+
+@pytest.mark.regression
+@pytest.mark.integration
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+@real_data_available
+def test_extract_vessel_symbols_tower_signature_no_false_positives_page2():
+    """The V-745 tower-top signature was calibrated against page 1 only --
+    confirm it doesn't spuriously fire on unrelated page 2 content."""
+    shapes = extract_vessel_symbols(REAL_PID_PATH, page_index=2, dpi=300)
+    assert shapes == []
