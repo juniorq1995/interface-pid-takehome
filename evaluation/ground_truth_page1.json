@@ -1,0 +1,49 @@
+{
+  "_methodology": "Hand-annotated by visual inspection of data/pid/diagram.pdf page 1 (V-745 NGL Stabilizer / P-745 Submersible Sump Pump sheet) rendered at 150 DPI, cropped into four overlapping quadrants for legibility. Built as a second real test page beyond page 0's ground truth. Honest limitation, disclosed rather than hidden: unlike the CV shape detections elsewhere in this project (each individually tight-rendered and visually confirmed), these tags were read from quadrant-level crops without per-tag zoom verification -- several loop-number suffixes on this sheet (the DPI/DPIT/TI/TW instrument tags) have an ambiguous last character that could read as either 'S' or '5' at this resolution, the same digit-mangling problem documented for OCR on this exact document (see README 'Title-block cross-check'). Tags with that ambiguity are excluded rather than guessed -- see excluded_uncertain below. Not a claim of exhaustiveness.",
+  "source_pdf": "data/pid/diagram.pdf",
+  "page_index": 1,
+  "components": [
+    {"tag": "V-745", "category": "equipment", "symbol": "vessel"},
+    {"tag": "P-745", "category": "equipment", "symbol": "vessel"},
+
+    {"tag": "MV-745-01", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-02", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-03", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-04", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-05", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-06", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-07", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-09", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-10", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-11", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-12", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-19", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-20", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-21", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-22", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-32", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-33", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-35", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-36", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-56", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-58", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-745-59", "category": "valve", "symbol": "bowtie"},
+
+    {"tag": "PSV 745-15", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "PI 745-15", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "PIT 745-15", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TSH 745", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TAH 745", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "LSH 745", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "LAH 745", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "LSCH 745", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "LSCL 745", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "HOA 746", "category": "instrument", "symbol": "circle_bubble"}
+  ],
+  "excluded_uncertain": [
+    "DPI/DPIT loop tags on the two 5-valve manifolds (approx '745-14S'/'745-145' and '745-13S'/'745-135') -- last character of the loop suffix is ambiguous between 'S' and '5' at 150 DPI, not confidently legible.",
+    "TIT/TW loop tags near the top-right vapor line (approx '745-15S'/'745-151') -- same S-vs-5 ambiguity.",
+    "TI/TW loop tags near the reboiler feed line (approx '745-13S'/'745-130') -- same S-vs-5 ambiguity.",
+    "A small square 'TI' instrument near the vapor recovery line (top-right quadrant) has a loop number too small to confidently read at this crop resolution -- excluded rather than guessed."
+  ]
+}

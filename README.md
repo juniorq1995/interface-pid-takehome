@@ -622,6 +622,35 @@ zero and statistically unreliable at that sample size. The 34.5%→58.6% number
 above is the one that actually matters — it's measured on the real assignment
 document, not the training distribution.
 
+### Second real test page — the pipeline isn't uniformly accurate across the document
+
+All numbers above are for page 0 (the F-715 particulate filter sheet), the only
+page ground truth existed for until now. Since the real assignment PDF has 3
+sheets, extended ground truth to page 1 (V-745 NGL Stabilizer / P-745 sump
+pump — `evaluation/ground_truth_page1.json`) using the same hand-annotation
+method as page 0, with one added honesty note: several instrument loop-number
+suffixes on this sheet are genuinely ambiguous between "S" and "5" at 150 DPI —
+the same digit-mangling problem this README already documents for OCR — so
+those are excluded rather than guessed, same as page 0's own precedent.
+
+Real, run-it-yourself result (`python evaluation/score_cv_accuracy.py --page 1
+--ground-truth evaluation/ground_truth_page1.json --use-yolo`):
+
+| Category | Page 0 | Page 1 |
+| --- | --- | --- |
+| Equipment | 100% (2/2) | **0% (0/2)** |
+| Valve (heuristics only) | 34.5% (10/29) | 22.7% (5/22) |
+| Valve (+ tiled YOLO) | 58.6% (17/29) | **72.7% (16/22)** |
+
+Two honest, opposite-direction findings, not cherry-picked: the vessel/equipment
+detector — validated thoroughly on page 0 — completely misses page 1's V-745
+vessel, meaning the "100% equipment coverage" claimed earlier was specific to
+that one page's rendering, not a general result. The trained YOLO detector, by
+contrast, generalizes *better* to page 1 than page 0 for valves. Neither result
+was assumed going in; both came from actually running the harness against new
+ground truth instead of re-testing the same page a training change was tuned
+against.
+
 ## Limitations (honest, not hidden)
 
 - Connector detection assumes straight or near-straight pipe runs and solid-fill
