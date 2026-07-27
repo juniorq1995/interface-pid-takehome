@@ -26,7 +26,14 @@ from src.pid_extraction.shape_detection import DetectedShape
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 VISION_MODEL = "llama3.2-vision:11b"
-REQUEST_TIMEOUT_S = 90
+# 90s was tuned for GPU inference (~8-10s/call observed). Confirmed by direct
+# test that CPU fallback (what Ollama picks when system RAM is tight, e.g. a
+# concurrent GPU training job) doesn't reliably finish even at 300s under
+# heavy contention — no timeout value fixes that; running this concurrently
+# with another heavy job is the actual problem, not the timeout. Bumped to
+# give real headroom for ordinary cold-start/GPU-contention variance without
+# masking the real fix (don't run this concurrently with another heavy job).
+REQUEST_TIMEOUT_S = 180
 
 LOOSE_TAG_PATTERN = re.compile(rf"\b({TAG_CORE}|[A-Z]{{1,4}}\s+\d{{2,4}}[A-Z]?)\b")
 

@@ -92,8 +92,15 @@ def class_name_to_component_type(class_name: str) -> str:
     return "unknown"
 
 
-def weights_available(weights_path: Path = DEFAULT_WEIGHTS_PATH) -> bool:
-    return weights_path.exists()
+def weights_available(weights_path: Path | None = None) -> bool:
+    """weights_path=None resolves DEFAULT_WEIGHTS_PATH at call time (module
+    global lookup), not as a bound default argument -- Python binds default
+    argument values once at function-definition time, so `weights_path: Path =
+    DEFAULT_WEIGHTS_PATH` would silently keep using whatever
+    DEFAULT_WEIGHTS_PATH was when this module first loaded, ignoring any later
+    reassignment (the exact bug pipeline.py's caller-side fix works around --
+    fixed here too so this footgun doesn't resurface for some other caller)."""
+    return (weights_path or DEFAULT_WEIGHTS_PATH).exists()
 
 
 def _iter_tile_offsets(width: int, height: int, tile_size: int, overlap: int) -> list[tuple[int, int]]:
@@ -156,7 +163,7 @@ def _run_model(model, image: np.ndarray, confidence: float, offset: tuple[int, i
 
 def detect_symbols(
     image: np.ndarray,
-    weights_path: Path = DEFAULT_WEIGHTS_PATH,
+    weights_path: Path | None = None,
     confidence: float = DEFAULT_CONFIDENCE,
 ) -> list[DetectedShape]:
     """Run the trained YOLO model on a rendered page image (as produced by
@@ -166,20 +173,25 @@ def detect_symbols(
     class_name_to_component_type, not derived from `kind` the way raster/vector
     shapes elsewhere in this package derive it from a fixed small vocabulary.
 
+    weights_path=None resolves DEFAULT_WEIGHTS_PATH at call time rather than as
+    a bound default argument -- see weights_available()'s docstring for why
+    that distinction matters; this is the same fix applied here too.
+
     Images larger than one tile are sliced into overlapping TILE_SIZE crops
     (see module docstring for why: the model was trained on pre-cropped
     640x640 tiles, and small P&ID symbols disappear if the whole page is
     resized down to fit that size in a single pass) — detections are merged
     back into full-image coordinates and deduplicated across tile overlaps."""
-    if not weights_path.exists():
+    resolved_weights_path = weights_path or DEFAULT_WEIGHTS_PATH
+    if not resolved_weights_path.exists():
         raise FileNotFoundError(
-            f"YOLO weights not found at {weights_path} — train the model first "
+            f"YOLO weights not found at {resolved_weights_path} — train the model first "
             f"(see README 'Closing the Valve Gap Further') or pass an explicit path."
         )
 
     from ultralytics import YOLO  # deferred: heavy import, only needed when this path is used
 
-    model = YOLO(str(weights_path))
+    model = YOLO(str(resolved_weights_path))
     height, width = image.shape[:2]
 
     if height <= TILE_SIZE and width <= TILE_SIZE:

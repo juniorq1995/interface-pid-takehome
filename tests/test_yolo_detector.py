@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+from src.pid_extraction import yolo_detector
 from src.pid_extraction.yolo_detector import (
     TILE_SIZE,
     _iou,
@@ -89,6 +90,29 @@ def test_weights_available_false_when_missing_edge_case(tmp_path):
 def test_detect_symbols_missing_weights_raises_failure_path(tmp_path):
     with pytest.raises(FileNotFoundError):
         detect_symbols(_image(), weights_path=tmp_path / "nope.pt")
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_weights_available_and_detect_symbols_pick_up_runtime_default_change(monkeypatch, tmp_path):
+    """Regression at the source, not just the caller-side workaround in
+    pipeline.py: weights_available()/detect_symbols() used to bind
+    DEFAULT_WEIGHTS_PATH as an ordinary default argument, so reassigning the
+    module attribute at runtime was silently ignored by any bare no-arg call
+    -- the exact bug that caused three checkpoint comparisons this session to
+    silently re-test the same old model. Both now resolve the module
+    attribute live when weights_path=None."""
+    new_default = tmp_path / "reassigned.pt"
+    monkeypatch.setattr(yolo_detector, "DEFAULT_WEIGHTS_PATH", new_default)
+    assert weights_available() is False  # file doesn't exist -- proves it's checking new_default, not the old bound one
+
+    with pytest.raises(FileNotFoundError, match=str(new_default)):
+        detect_symbols(_image())  # same proof: error message must cite new_default, not the stale original
+
+    new_default.write_bytes(b"")
+    assert weights_available() is True
 
 
 @pytest.mark.unit
