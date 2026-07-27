@@ -697,7 +697,66 @@ improved from 0% to 50% but isn't solved — the vessel-detection heuristic
 still doesn't generalize past page 0's specific rendering, and the coarse
 model's own equipment class had by far the least training data of the three
 categories (6,360 boxes vs. 35,885 for valve) since neither source dataset is
-equipment-heavy the way it's valve-heavy.
+equipment-heavy the way it's valve-heavy. (Closed to 100% shortly after — see
+"V-745 found" below.)
+
+### V-745 found, then two retraining attempts tried and rejected
+
+**V-745's vector signature.** The 50% equipment gap above was page 1's V-745
+stabilizer tower — a different vessel shape than F-715, so F-715's signature
+(60-90 line items, wide/short) never matched it. Rendered V-745 at 8pt padding
+the same way F-715 was verified, and found a second, disjoint compound-stroke
+signature: 40-55 line items, tall/narrow ("tower-top"), distinct enough from
+F-715's range that both can be checked without false-matching each other.
+Added as a second signature in `_matches_any_vessel_signature`
+(`src/pid_extraction/vector_equipment.py`), each independently verified by
+tight-crop render before trusting it — same discipline as the F-715 work
+above. **Page 1 equipment: 50% (1/2) → 100% (2/2)**, with a regression test
+per signature (`test_extract_vessel_symbols_finds_v745_tower_top_on_page1`,
+`test_extract_vessel_symbols_tower_signature_no_false_positives_page2`).
+
+**Two retraining attempts on the symbol detector, both tried and rejected.**
+With the coarse 3-class model (`pid_coarse_v1`) shipped and equipment/valve
+gaps closed by the vector work above, two follow-up checkpoints were trained
+to see if the YOLO leg itself could be improved directly:
+
+- **Option A** — same architecture (yolov8n), `imgsz=960` (up from the
+  default 640) plus `copy_paste` augmentation, warm-started from
+  `pid_coarse_v1`. Training-set `mAP50` reached 0.942 after 40 epochs, the
+  best of the three checkpoints by that metric.
+- **Option B** — `yolov8s` (more capacity than the shipped `yolov8n`), same
+  merged dataset, 40 epochs. Training-set `mAP50` topped out at 0.814 —
+  notably *lower* than Option A despite more capacity, itself a sign this
+  merged dataset doesn't have enough equipment/instrument examples to reward
+  the larger model.
+
+Both were then run through `evaluation/score_cv_accuracy.py --use-yolo
+--yolo-weights <checkpoint>` against the same two real ground-truth pages —
+the only measurement that matters, since training-set `mAP50` doesn't
+promise anything about a real, out-of-distribution document. Neither
+improved on `pid_coarse_v1`: valve/instrument counts were within noise of
+each other across all three checkpoints, tag accuracy was identically zero
+for all three (symbol detection alone doesn't resolve tags — that's
+`--llm-ocr-assist`'s job, orthogonal to which checkpoint is used), and **both
+Option A and Option B regressed page 1 equipment back to 50% (1/2)** —
+diagnosed directly (not guessed): both checkpoints simply stop detecting the
+one small YOLO-sourced equipment box (`UNLABELED-66`, a 45×37px symbol) that
+`pid_coarse_v1` catches; the vector-sourced V-745 tower detection above is
+unaffected since it doesn't depend on YOLO weights at all. Most likely cause:
+equipment is the class with the least training data in this merged dataset
+(6,360 boxes vs. 35,885 for valve, noted above), so a from-a-different-seed
+retrain has enough variance to lose a marginal, borderline detection even
+while gaining training-set `mAP50` elsewhere.
+
+**Decision: kept `pid_coarse_v1` as the shipped default.** Neither retrain
+paid for its own added complexity — Option A adds an augmentation/resolution
+change with no measured real-document benefit, Option B adds real inference
+cost (yolov8s vs. yolov8n) for a *worse* result. Reported here rather than
+quietly discarded, since "we tried two follow-up training runs and neither
+beat the checkpoint already shipped" is itself the honest, correctly-measured
+result — the alternative (swapping in whichever checkpoint has the highest
+training mAP without checking it against real ground truth) is exactly the
+kind of mistake this evaluation methodology exists to catch.
 
 ## Limitations (honest, not hidden)
 

@@ -40,13 +40,19 @@ def _normalize_tag(tag: str) -> str:
     return re.sub(r"\s+", " ", tag.strip().upper())
 
 
-def score(pdf_path: Path, page: int, ground_truth_path: Path, llm_ocr_assist: bool, use_yolo: bool = False) -> dict:
+def score(
+    pdf_path: Path, page: int, ground_truth_path: Path, llm_ocr_assist: bool, use_yolo: bool = False,
+    yolo_weights_path: Path | None = None,
+) -> dict:
     ground_truth = json.loads(ground_truth_path.read_text())
     gt_components = ground_truth["components"]
     gt_by_category = Counter(c["category"] for c in gt_components)
     gt_tags = {_normalize_tag(c["tag"]) for c in gt_components}
 
-    graph = extract_pid_graph(pdf_path, page=page, dpi=300, llm_ocr_assist=llm_ocr_assist, use_yolo=use_yolo)
+    graph = extract_pid_graph(
+        pdf_path, page=page, dpi=300, llm_ocr_assist=llm_ocr_assist, use_yolo=use_yolo,
+        yolo_weights_path=yolo_weights_path,
+    )
 
     detected_by_category = Counter(d.get("component_type", "unknown") for _, d in graph.nodes(data=True))
     # Ground truth categories are coarse (instrument/valve/equipment); collapse
@@ -103,10 +109,11 @@ def main() -> None:
     parser.add_argument("--ground-truth", type=Path, default=GROUND_TRUTH_PATH)
     parser.add_argument("--llm-ocr-assist", action="store_true")
     parser.add_argument("--use-yolo", action="store_true", help="Add the trained YOLO detector as an ensemble source")
+    parser.add_argument("--yolo-weights", type=Path, default=None, help="Override YOLO checkpoint path (default: yolo_detector.DEFAULT_WEIGHTS_PATH)")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
-    result = score(args.pdf, args.page, args.ground_truth, args.llm_ocr_assist, args.use_yolo)
+    result = score(args.pdf, args.page, args.ground_truth, args.llm_ocr_assist, args.use_yolo, args.yolo_weights)
 
     print(f"CV accuracy score — {args.pdf} page {args.page} (llm_ocr_assist={args.llm_ocr_assist}, use_yolo={args.use_yolo})")
     print()
