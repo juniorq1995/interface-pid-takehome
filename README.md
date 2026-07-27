@@ -524,15 +524,41 @@ bubbles to valves and pumps specifically, since it has real class names to
 classify against rather than requiring manual visual inspection of the Digitize-PID
 figure.
 
-### Next: Phase 1 (few-shot symbol classification) — not yet built
+### Phase 1: symbol-type classification (crop → local vision model) — built, live-data validation pending
 
-Same architecture as the LLM OCR assist above (crop → local vision model), applied
-to shape *type* instead of tag *text*: for raster-detected shapes currently
-classified `"unknown"`, show the crop plus a handful of labeled reference glyphs
-(from the Roboflow set or the Kimray guide's own symbol pages) and ask the model
-to classify. Not implemented in this session — flagged here rather than claimed
-done, since the honest-limitations discipline in this README should apply to R&D
-scope creep too, not just the original assignment.
+Same architecture as the LLM OCR assist above, applied to shape *type* instead
+of tag *text*: `src/pid_extraction/symbol_type_classifier.py`'s
+`classify_symbol_type_with_llm` crops a shape and asks the same local
+`llama3.2-vision:11b` model to classify it into this project's 3 categories
+(valve/instrument/equipment) plus a best-effort finer subtype (e.g.
+`gate_valve`, `pressure_indicator`) drawn from the same vocabulary tag
+prefixes already resolve to, plus common valve-body subtypes (gate/ball/
+check/globe/butterfly/needle) that tag prefixes on this document structurally
+can't distinguish (`MV` covers every manual valve regardless of body type) —
+exactly the kind of gap visual classification, not text parsing, is suited to
+close. An off-vocabulary subtype the model invents is dropped rather than
+trusted verbatim (more likely hallucinated than a real gap in the list).
+
+Wired into the pipeline as `--symbol-type-assist` (opt-in, same contract as
+`--llm-ocr-assist`): only runs for shapes that would otherwise reach the
+graph as `component_type: "unknown"` — no tag-resolved type, no YOLO
+override, and a raster/vector `kind` outside `SHAPE_TO_TYPE`'s 4-entry
+vocabulary — and never overrides a type a cheaper/more-certain path already
+resolved. 18 tests (`test_symbol_type_classifier.py`,
+`test_pipeline_merge_shapes.py`) cover the classifier in isolation (mocked
+HTTP, vocabulary parsing, empty-crop and network-failure paths) and the
+pipeline wiring (fills gaps, never overrides, off by default, unresolved
+classification leaves the shape honestly "unknown" rather than a crash or a
+guess).
+
+**Not yet run against real "unknown" shapes on the actual document** — this
+session's LLM-OCR-assist full-page re-run (previous section) was already
+running when this was built, and running two vision-model workloads
+concurrently on this CPU-only box is exactly the resource-contention problem
+already diagnosed and documented above; sequenced after rather than repeating
+that mistake. Code and tests are real and complete; a real-crop validation
+result (matching the "first 4 crops" precedent set for OCR-assist) is the
+honest next step, not claimed here in advance of actually running it.
 
 ### Closing the Valve Gap Further — a real detector shipped, a technique tried and rejected
 

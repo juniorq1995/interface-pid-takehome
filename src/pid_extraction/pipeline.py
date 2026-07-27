@@ -5,6 +5,7 @@ from pathlib import Path
 
 import networkx as nx
 
+from src.component_types import SHAPE_TO_TYPE, type_from_tag
 from src.pid_extraction.connector_detection import (
     detect_connections,
     detect_connections_from_vector_segments,
@@ -14,6 +15,7 @@ from src.pid_extraction.llm_ocr_assist import read_tag_with_llm
 from src.pid_extraction.ocr_tagging import extract_tag
 from src.pid_extraction.pdf_to_image import pdf_to_images
 from src.pid_extraction.shape_detection import detect_shapes
+from src.pid_extraction.symbol_type_classifier import classify_symbol_type_with_llm
 from src.pid_extraction.vector_equipment import extract_vessel_symbols
 from src.pid_extraction.vector_lines import extract_line_segments
 from src.pid_extraction.vector_symbols import extract_circle_symbols
@@ -51,7 +53,7 @@ def _merge_shapes(raster_shapes, *vector_shape_lists, yolo_shapes=()):
 
 def _extract_page_graph(
     image, pdf_path: str | Path | None = None, page_index: int = 0, dpi: int = 200, llm_ocr_assist: bool = False,
-    use_yolo: bool = False, yolo_weights_path: Path | None = None,
+    use_yolo: bool = False, yolo_weights_path: Path | None = None, symbol_type_assist: bool = False,
 ) -> nx.Graph:
     raster_shapes = detect_shapes(image)
     circle_shapes = extract_circle_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
@@ -89,6 +91,27 @@ def _extract_page_graph(
                 tags[shape.shape_id] = (llm_tag, llm_raw)
                 tag_sources[shape.shape_id] = "llm_assisted"
 
+    if symbol_type_assist:
+        # Phase 1 (README "Next: Phase 1"): for shapes that would otherwise
+        # reach graph_builder.py as component_type "unknown" -- no tag-resolved
+        # type, no YOLO override, and a raster/vector `kind` outside
+        # SHAPE_TO_TYPE's 4-entry vocabulary -- ask the local vision model what
+        # kind of symbol it actually is. Only fills gaps: never runs for a
+        # shape that already has a tag-resolved or YOLO-resolved type, and a
+        # classification that comes back None/off-vocabulary just leaves the
+        # shape "unknown", same as if this flag were off.
+        for shape in shapes:
+            if type_from_tag(tags[shape.shape_id][0] or ""):
+                continue
+            if shape.shape_id in component_type_overrides:
+                continue
+            if SHAPE_TO_TYPE.get(shape.kind, "unknown") != "unknown":
+                continue
+            coarse, subtype, _raw = classify_symbol_type_with_llm(image, shape)
+            resolved = subtype or coarse
+            if resolved:
+                component_type_overrides[shape.shape_id] = resolved
+
     edges = []
     if pdf_path is not None:
         segments = extract_line_segments(pdf_path, page_index, dpi)
@@ -102,17 +125,19 @@ def _extract_page_graph(
 
 def extract_pid_graph(
     pdf_path: str | Path, page: int = 0, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False,
-    yolo_weights_path: Path | None = None,
+    yolo_weights_path: Path | None = None, symbol_type_assist: bool = False,
 ) -> nx.Graph:
     images = pdf_to_images(pdf_path, dpi=dpi)
     if page >= len(images):
         raise ValueError(f"Requested page {page}, PDF only has {len(images)} page(s)")
-    return _extract_page_graph(images[page], pdf_path, page, dpi, llm_ocr_assist, use_yolo, yolo_weights_path)
+    return _extract_page_graph(
+        images[page], pdf_path, page, dpi, llm_ocr_assist, use_yolo, yolo_weights_path, symbol_type_assist
+    )
 
 
 def extract_pid_graph_all_pages(
     pdf_path: str | Path, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False,
-    yolo_weights_path: Path | None = None,
+    yolo_weights_path: Path | None = None, symbol_type_assist: bool = False,
 ) -> nx.Graph:
     """Multi-sheet P&ID sets (e.g. the real Interface assignment PDF) are processed
     page by page and merged — component tags are assumed unique across sheets, which
@@ -120,7 +145,9 @@ def extract_pid_graph_all_pages(
     images = pdf_to_images(pdf_path, dpi=dpi)
     combined = nx.Graph()
     for page_index, image in enumerate(images):
-        page_graph = _extract_page_graph(image, pdf_path, page_index, dpi, llm_ocr_assist, use_yolo, yolo_weights_path)
+        page_graph = _extract_page_graph(
+            image, pdf_path, page_index, dpi, llm_ocr_assist, use_yolo, yolo_weights_path, symbol_type_assist
+        )
         # Unresolved shapes are labeled "UNLABELED-{shape_id}", and shape_id restarts
         # at 0 on every page — without this, nx.compose silently merges same-labeled
         # nodes from different pages, undercounting real components. Resolved tags

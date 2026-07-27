@@ -47,7 +47,7 @@ def _normalize_tag(tag: str) -> str:
 
 def score(
     pdf_path: Path, page: int, ground_truth_path: Path, llm_ocr_assist: bool, use_yolo: bool = False,
-    yolo_weights_path: Path | None = None,
+    yolo_weights_path: Path | None = None, symbol_type_assist: bool = False,
 ) -> dict:
     ground_truth = json.loads(ground_truth_path.read_text())
     gt_components = ground_truth["components"]
@@ -56,7 +56,7 @@ def score(
 
     graph = extract_pid_graph(
         pdf_path, page=page, dpi=300, llm_ocr_assist=llm_ocr_assist, use_yolo=use_yolo,
-        yolo_weights_path=yolo_weights_path,
+        yolo_weights_path=yolo_weights_path, symbol_type_assist=symbol_type_assist,
     )
 
     detected_by_category = Counter(d.get("component_type", "unknown") for _, d in graph.nodes(data=True))
@@ -115,12 +115,19 @@ def main() -> None:
     parser.add_argument("--llm-ocr-assist", action="store_true")
     parser.add_argument("--use-yolo", action="store_true", help="Add the trained YOLO detector as an ensemble source")
     parser.add_argument("--yolo-weights", type=Path, default=None, help="Override YOLO checkpoint path (default: yolo_detector.DEFAULT_WEIGHTS_PATH)")
+    parser.add_argument("--symbol-type-assist", action="store_true", help="Phase 1: classify shapes the geometric heuristics couldn't type, via local vision model")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
-    result = score(args.pdf, args.page, args.ground_truth, args.llm_ocr_assist, args.use_yolo, args.yolo_weights)
+    result = score(
+        args.pdf, args.page, args.ground_truth, args.llm_ocr_assist, args.use_yolo, args.yolo_weights,
+        args.symbol_type_assist,
+    )
 
-    print(f"CV accuracy score — {args.pdf} page {args.page} (llm_ocr_assist={args.llm_ocr_assist}, use_yolo={args.use_yolo})")
+    print(
+        f"CV accuracy score — {args.pdf} page {args.page} "
+        f"(llm_ocr_assist={args.llm_ocr_assist}, use_yolo={args.use_yolo}, symbol_type_assist={args.symbol_type_assist})"
+    )
     print()
     print("Category coverage (symbol found, regardless of tag correctness):")
     for category, stats in result["category_coverage"].items():

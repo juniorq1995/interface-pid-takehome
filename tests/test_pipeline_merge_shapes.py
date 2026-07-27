@@ -95,3 +95,86 @@ def test_extract_page_graph_explicit_weights_path_overrides_default():
 
     mock_available.assert_called_once_with(explicit_path)
     assert mock_detect.call_args[0][1] == explicit_path
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+def test_symbol_type_assist_fills_component_type_for_unknown_shape():
+    """Phase 1 wiring: a shape with no tag-resolved type, no YOLO override,
+    and a kind outside SHAPE_TO_TYPE's vocabulary (kind="unknown", so it would
+    otherwise reach the graph as component_type "unknown") gets classified by
+    the local vision model instead when symbol_type_assist=True."""
+    shape = _shape("unknown")
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[shape]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.classify_symbol_type_with_llm", return_value=("valve", "gate_valve", "valve, gate_valve")) as mock_classify,
+    ):
+        graph = _extract_page_graph(np.zeros((10, 10, 3), dtype=np.uint8), symbol_type_assist=True)
+
+    mock_classify.assert_called_once()
+    node_data = next(iter(graph.nodes(data=True)))[1]
+    assert node_data["component_type"] == "gate_valve"
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_symbol_type_assist_never_overrides_tag_resolved_type_edge_case():
+    """A shape with a real, tag-resolved type must never be sent to the vision
+    model at all -- symbol_type_assist only fills gaps, it doesn't second-guess
+    a cheaper/more-certain path."""
+    shape = _shape("circle")  # circle already maps to "instrument" via SHAPE_TO_TYPE
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[shape]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=("PI-101", "PI-101")),
+        patch("src.pid_extraction.pipeline.classify_symbol_type_with_llm") as mock_classify,
+    ):
+        graph = _extract_page_graph(np.zeros((10, 10, 3), dtype=np.uint8), symbol_type_assist=True)
+
+    mock_classify.assert_not_called()
+    node_data = graph.nodes["PI-101"]
+    assert node_data["component_type"] == "pressure_indicator"
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_symbol_type_assist_off_by_default_edge_case():
+    """symbol_type_assist=False (the default) must never call the vision
+    model, matching llm_ocr_assist's own opt-in-only contract."""
+    shape = _shape("unknown")
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[shape]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.classify_symbol_type_with_llm") as mock_classify,
+    ):
+        graph = _extract_page_graph(np.zeros((10, 10, 3), dtype=np.uint8))
+
+    mock_classify.assert_not_called()
+    node_data = next(iter(graph.nodes(data=True)))[1]
+    assert node_data["component_type"] == "unknown"
+
+
+@pytest.mark.unit
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_symbol_type_assist_unresolved_classification_leaves_shape_unknown_failure_path():
+    """When the model can't confidently classify a shape either (both
+    coarse/subtype come back None), the shape stays "unknown" -- same as if
+    the flag were off, not a crash and not a fabricated guess."""
+    shape = _shape("unknown")
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[shape]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.classify_symbol_type_with_llm", return_value=(None, None, "unknown")),
+    ):
+        graph = _extract_page_graph(np.zeros((10, 10, 3), dtype=np.uint8), symbol_type_assist=True)
+
+    node_data = next(iter(graph.nodes(data=True)))[1]
+    assert node_data["component_type"] == "unknown"
