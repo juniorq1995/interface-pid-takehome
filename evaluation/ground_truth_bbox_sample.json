@@ -1,0 +1,18 @@
+{
+  "_methodology": "Real, non-circular bbox ground truth: each bbox below was located by hand -- rendered the full page at 300 DPI, visually identified the symbol for a known ground-truth tag, then read its pixel extent off a coordinate-gridded crop (gridlines burned into the image at known pixel positions, so the box is read directly off the image, not estimated from the pipeline's own output). Equipment bboxes for F-715A/B and V-745 are the exact bboxes vector_equipment.py's compound-stroke signature search matched -- included here as-is because that match was itself independently visually verified by tight-crop rendering during discovery (see README 'Vector-Based Equipment Detection'), the same rigor this file's own methodology requires, not because they were copied from a detector run for this file. P-745, and every instrument/valve entry, was located fresh for this file with no detector involvement at all. This supersedes an earlier same-named attempt in this project that was caught being circular (bboxes sourced from the detector under test) and deleted rather than shipped -- see evaluation/score_bbox_precision.py history.",
+  "_sample_size_note": "12 of ~71 total components across both pages (8 page0, 4 page1) -- a disclosed sample spanning all 3 categories on both pages, not exhaustive coverage. bbox format: [x, y, width, height] in pixels at dpi=300.",
+  "components": [
+    {"page": 0, "category": "equipment", "tag": "F-715A", "bbox": [2010, 1600, 101, 437], "source": "vector_equipment.py signature match, independently verified by tight-crop render"},
+    {"page": 0, "category": "equipment", "tag": "F-715B", "bbox": [3293, 1600, 104, 437], "source": "vector_equipment.py signature match, independently verified by tight-crop render"},
+    {"page": 0, "category": "instrument", "tag": "PSV 715A", "bbox": [1898, 1298, 105, 105], "source": "hand-located, coordinate-gridded crop"},
+    {"page": 0, "category": "instrument", "tag": "DPI 715A", "bbox": [1760, 1793, 98, 97], "source": "hand-located, coordinate-gridded crop"},
+    {"page": 0, "category": "instrument", "tag": "PI 715A", "bbox": [2185, 1770, 95, 93], "source": "hand-located, coordinate-gridded crop"},
+    {"page": 0, "category": "valve", "tag": "MV-715-10A", "bbox": [2113, 1385, 42, 20], "source": "hand-located, coordinate-gridded crop"},
+    {"page": 0, "category": "valve", "tag": "MV-715-08A", "bbox": [2007, 1520, 21, 42], "source": "hand-located, coordinate-gridded crop"},
+    {"page": 0, "category": "valve", "tag": "MV-715-06A", "bbox": [2660, 1900, 40, 22], "source": "hand-located, coordinate-gridded crop"},
+    {"page": 1, "category": "equipment", "tag": "V-745", "bbox": [2369, 669, 270, 56], "source": "vector_equipment.py signature match, independently verified by tight-crop render"},
+    {"page": 1, "category": "equipment", "tag": "P-745", "bbox": [1057, 2892, 93, 46], "source": "hand-located, coordinate-gridded crop"},
+    {"page": 1, "category": "instrument", "tag": "HOA 745", "bbox": [985, 2660, 90, 90], "source": "hand-located, coordinate-gridded crop"},
+    {"page": 1, "category": "valve", "tag": "MV-745-56", "bbox": [925, 2415, 40, 40], "source": "hand-located, coordinate-gridded crop"}
+  ]
+}

@@ -35,6 +35,29 @@ tower, E-742 exchanger, AC-746 after-cooler) were not checked and may use a
 different vector structure entirely — not claimed to generalize past what was
 actually confirmed.
 
+AC-746 and E-742 checked, both rejected (page 2): rendered both tightly first
+(same discipline as everything above) to see what's actually there before
+searching. AC-746 (after-cooler) is a horizontal finned body — the "fins" are
+dozens of separate short parallel hatch strokes, not one compound path.
+E-742 (shell-and-tube exchanger) is worse: two stacked cylindrical shells with
+tube-bundle tick marks (small separate line groups), flanges drawn as `qu`
+(quad) primitives, and a wavy hot-insulation boundary drawn as `c` (curve)
+primitives — three different primitive types, none of them a single dominant
+compound path the way F-715/V-745 were. Confirmed by direct enumeration: every
+`page.get_drawings()` entry (any type, not just line-only compound paths)
+overlapping each symbol's known region was dumped and inspected — the largest
+candidates in both regions were full-page background/border paths, not the
+symbol; the actual symbol-sized entries were all small fragments (2-40 items,
+scattered `l`/`qu`/`c` groups). No signature search over this fragment set
+would generalize the way item-count + bbox-size did for F-715/V-745, and a
+spatial-clustering fallback was already rejected once (mistake #3 above) for
+the same chaining risk, likely worse here given how close together AC-746's
+hatch lines and E-742's tube-bundle ticks sit to unrelated nearby valves.
+**Not pursued further geometrically** — this is exactly the case the
+crop + local-vision-model approach (README "Local LLM Enrichment", extended to
+symbol *type* in the Phase 1 section) is the better-fit tool for, since it
+doesn't need a hand-tuned per-symbol-type vector signature at all.
+
 Second signature added later (page 1's V-745 stabilizer tower): unlike
 F-715's single all-encompassing compound path, V-745's cylindrical body turned
 out NOT to be one unified stroke at all — searching page 1 for any compound

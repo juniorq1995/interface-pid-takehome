@@ -389,9 +389,11 @@ blended into one number, because they're genuinely different failure modes:
 - **Tag accuracy** — precision/recall/F1 on exact tag text, only meaningful for
   symbols the pipeline actually resolved a tag for.
 
-No pixel-level bounding-box ground truth exists (this was eyeballed from a
-rendered image, not annotated in a tool like CVAT/LabelImg), so this can't score
-localization — only "was this exact tag found somewhere." Disclosed, not hidden.
+This ground truth is text/category only (eyeballed from a rendered image, not
+annotated in a tool like CVAT/LabelImg), so it can't score localization on its
+own — only "was this exact tag found somewhere." A separate 12-component
+hand-verified bbox sample closes part of that gap later in this README ("Real
+bbox localization precision"): real IoU 0.60 mean over matched components.
 
 Run it: `python evaluation/score_cv_accuracy.py --page 0 [--llm-ocr-assist]`
 
@@ -757,6 +759,48 @@ beat the checkpoint already shipped" is itself the honest, correctly-measured
 result — the alternative (swapping in whichever checkpoint has the highest
 training mAP without checking it against real ground truth) is exactly the
 kind of mistake this evaluation methodology exists to catch.
+
+### Real bbox localization precision — a hand-verified sample, non-circular this time
+
+An earlier attempt at this in-session sourced its bbox "ground truth" from
+the same heuristic detector under test — caught (IoU=1.0 across every sample
+was the tell) and deleted rather than shipped, without a fallback metric that
+would have quietly hidden the mistake. This is the real replacement:
+`evaluation/ground_truth_bbox_sample.json`, 12 components hand-located from
+the actual rendered pages — for each, the real page was rendered at 300 DPI,
+the symbol for a known ground-truth tag was found by eye, and its pixel
+extent was read directly off a coordinate-gridded crop (gridlines burned into
+the image at known pixel positions, so the box is read off the image, not
+estimated or copied from any detector's output). F-715A/B and V-745's boxes
+are the exact geometry `vector_equipment.py`'s signature search matched —
+included as-is, but only because that match was *itself* independently
+verified by tight-crop rendering during discovery (same rigor this file
+requires), not because they were pulled from a detector run for this file.
+
+`evaluation/score_bbox_precision.py` scores it: since tag resolution is a
+separate, already-zero-measured gap (previous section), matching is by
+nearest-center-distance within the same coarse category rather than by tag —
+a narrower question ("when something is detected nearby in the right
+category, how well does its box actually overlap the real symbol"), but a
+real one that category-coverage counting alone can't answer.
+
+**Real, run-it-yourself result:** 10/12 matched (within 120px center
+distance), mean IoU over matched components **0.60**, mean IoU treating the 2
+unmatched as zero **0.50**. By category: instruments landed at IoU
+0.43-0.55 (detected circles are consistently smaller than the real symbol —
+69px diameter detected vs. ~95-105px real, a systematic undersizing, not
+random noise); valves ranged 0.15-0.62 with one clean miss (`MV-715-06A`, no
+valve detection within 120px of the real symbol at all); `P-745` (the sump
+pump) was also a clean miss — expected, since no equipment heuristic in this
+project has ever targeted pump symbols, only the two vessel-signature types.
+This confirms directly what the raw-count comparison in the previous section
+could only infer indirectly: some of that "over-detection" (36 vs. 29, 39 vs.
+22) is real false positives, and even correctly-triggered detections aren't
+tightly localized — instrument circles run consistently undersized. A fixed
+per-category size correction (e.g. instrument bbox = detected-diameter × 1.4)
+is the obvious next lever this number motivates, not attempted here since one
+hand-verified sample isn't enough to fit a correction factor against without
+just overfitting to these 12 points.
 
 ## Limitations (honest, not hidden)
 

@@ -12,10 +12,15 @@ Two separate metrics, deliberately not blended into one score:
    components the pipeline actually resolved a tag for. Measures OCR/LLM-assist
    quality specifically, independent of symbol-detection coverage.
 
-No bounding-box ground truth exists (this was hand-annotated by eye from a
-rendered image, not pixel-labeled), so this can't score localization (IoU) —
-only "was this exact tag found somewhere." That's a real, disclosed limitation
-of this evaluation, not hidden.
+This ground truth is text/category only (hand-annotated by eye from a
+rendered image, not pixel-labeled), so it can't score localization (IoU) —
+only "was this exact tag found somewhere." A separate, smaller hand-verified
+bbox sample now exists for that (see score_bbox_precision.py and README
+"Real bbox localization precision") — deliberately kept as a second, narrower
+script rather than merged in here, since it answers a different question
+(overlap quality on a 12-component sample) with a different matching strategy
+(nearest-detection-by-category, not exact tag) than this script's exhaustive
+tag-based scoring.
 
 Usage:
     python evaluation/score_cv_accuracy.py [--pdf PATH] [--page N] [--llm-ocr-assist]

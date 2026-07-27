@@ -1,0 +1,239 @@
+{
+  "sample_size": 12,
+  "matched_count": 10,
+  "unmatched_count": 2,
+  "mean_iou_over_matched": 0.6,
+  "mean_iou_over_all_including_unmatched_as_zero": 0.5,
+  "per_component": [
+    {
+      "page": 0,
+      "category": "equipment",
+      "tag": "F-715A",
+      "gt_bbox": [
+        2010,
+        1600,
+        101,
+        437
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 0.0,
+      "matched_detection_bbox": [
+        2010,
+        1600,
+        101,
+        437
+      ],
+      "iou": 1.0
+    },
+    {
+      "page": 0,
+      "category": "equipment",
+      "tag": "F-715B",
+      "gt_bbox": [
+        3293,
+        1600,
+        104,
+        437
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 0.0,
+      "matched_detection_bbox": [
+        3293,
+        1600,
+        104,
+        437
+      ],
+      "iou": 1.0
+    },
+    {
+      "page": 0,
+      "category": "instrument",
+      "tag": "PSV 715A",
+      "gt_bbox": [
+        1898,
+        1298,
+        105,
+        105
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 7.3,
+      "matched_detection_bbox": [
+        1923,
+        1318,
+        69,
+        69
+      ],
+      "iou": 0.432
+    },
+    {
+      "page": 0,
+      "category": "instrument",
+      "tag": "DPI 715A",
+      "gt_bbox": [
+        1760,
+        1793,
+        98,
+        97
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 22.4,
+      "matched_detection_bbox": [
+        1794,
+        1796,
+        69,
+        69
+      ],
+      "iou": 0.448
+    },
+    {
+      "page": 0,
+      "category": "instrument",
+      "tag": "PI 715A",
+      "gt_bbox": [
+        2185,
+        1770,
+        95,
+        93
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 5.6,
+      "matched_detection_bbox": [
+        2200,
+        1787,
+        70,
+        69
+      ],
+      "iou": 0.547
+    },
+    {
+      "page": 0,
+      "category": "valve",
+      "tag": "MV-715-10A",
+      "gt_bbox": [
+        2113,
+        1385,
+        42,
+        20
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 19.0,
+      "matched_detection_bbox": [
+        2134,
+        1381,
+        38,
+        27
+      ],
+      "iou": 0.29
+    },
+    {
+      "page": 0,
+      "category": "valve",
+      "tag": "MV-715-08A",
+      "gt_bbox": [
+        2007,
+        1520,
+        21,
+        42
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 17.5,
+      "matched_detection_bbox": [
+        2021,
+        1512,
+        27,
+        50
+      ],
+      "iou": 0.152
+    },
+    {
+      "page": 0,
+      "category": "valve",
+      "tag": "MV-715-06A",
+      "gt_bbox": [
+        2660,
+        1900,
+        40,
+        22
+      ],
+      "matched": false,
+      "nearest_center_distance_px": 343.7,
+      "matched_detection_bbox": null,
+      "iou": 0.0
+    },
+    {
+      "page": 1,
+      "category": "equipment",
+      "tag": "V-745",
+      "gt_bbox": [
+        2369,
+        669,
+        270,
+        56
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 0.0,
+      "matched_detection_bbox": [
+        2369,
+        669,
+        270,
+        56
+      ],
+      "iou": 1.0
+    },
+    {
+      "page": 1,
+      "category": "equipment",
+      "tag": "P-745",
+      "gt_bbox": [
+        1057,
+        2892,
+        93,
+        46
+      ],
+      "matched": false,
+      "nearest_center_distance_px": 2623.2,
+      "matched_detection_bbox": null,
+      "iou": 0.0
+    },
+    {
+      "page": 1,
+      "category": "instrument",
+      "tag": "HOA 745",
+      "gt_bbox": [
+        985,
+        2660,
+        90,
+        90
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 18.1,
+      "matched_detection_bbox": [
+        988,
+        2654,
+        69,
+        69
+      ],
+      "iou": 0.511
+    },
+    {
+      "page": 1,
+      "category": "valve",
+      "tag": "MV-745-56",
+      "gt_bbox": [
+        925,
+        2415,
+        40,
+        40
+      ],
+      "matched": true,
+      "nearest_center_distance_px": 7.0,
+      "matched_detection_bbox": [
+        935,
+        2409,
+        33,
+        47
+      ],
+      "iou": 0.615
+    }
+  ]
+}
