@@ -6,6 +6,28 @@ import networkx as nx
 from src.component_types import SHAPE_TO_TYPE, type_from_tag
 from src.pid_extraction.shape_detection import DetectedShape
 
+# Local to this module, deliberately not src.component_types.coarse_category:
+# that function is used by crossref/compare.py to compare against the SOP's
+# own declared_types vocabulary ("pump", "tank", "compressor", ...), which
+# needs the fine-grained split preserved -- collapsing it here would silently
+# break TYPE_MISMATCH detection, the best-verified feature in this project.
+# This is a narrower "does a tag-derived type roughly agree with a
+# geometry-derived type" check, scoped only to this file's own tag-vs-geometry
+# trust decision below. Pattern-matched rather than an explicit lookup table so
+# it doesn't silently drift out of sync as TAG_PREFIX_TYPES grows (e.g. a
+# future *_valve entry is caught automatically; an explicit dict wouldn't be).
+_EQUIPMENT_TYPES = {"tank", "pump", "compressor", "heat_exchanger", "filter"}
+
+
+def _project_coarse(component_type: str | None) -> str | None:
+    if component_type is None or component_type == "unknown":
+        return None
+    if "valve" in component_type:
+        return "valve"
+    if component_type in _EQUIPMENT_TYPES:
+        return "equipment"
+    return "instrument"
+
 
 def build_graph(
     shapes: list[DetectedShape],
@@ -39,11 +61,29 @@ def build_graph(
             seen = tag_occurrences.get(tag, 0)
             tag_occurrences[tag] = seen + 1
             label = tag if seen == 0 else f"{tag} (dup {seen + 1})"
-        component_type = (
-            (tag and type_from_tag(tag))
-            or component_type_overrides.get(shape.shape_id)
-            or SHAPE_TO_TYPE.get(shape.kind, "unknown")
-        )
+        # Real bug found and fixed this session: a resolved tag used to
+        # unconditionally win over an already-known geometric/YOLO type, on
+        # the assumption that printed tag text is more authoritative than a
+        # shape heuristic. That assumption breaks when the tag itself is
+        # wrong -- confirmed live: an oversized/ambiguous crop's LLM-read
+        # text ("FT-101" on a vessel that was never a flow transmitter)
+        # silently reclassified an already-correctly-typed shape. Geometry
+        # is demonstrably the more reliable source on this document (100%
+        # category coverage without any tag involved at all -- see README).
+        # Fix: a tag-derived type is only trusted when it either agrees with
+        # the shape's own geometric coarse category (a legitimate
+        # refinement, e.g. circle->instrument, tag "PI 715A"->the finer
+        # "pressure_indicator") or when geometry has no opinion at all
+        # (kind=="unknown", no override -- exactly Phase 1's target case).
+        # A tag whose coarse category *contradicts* geometry is dropped for
+        # typing purposes (the raw tag text/tag_confidence are unaffected --
+        # this only guards component_type).
+        tag_type = tag and type_from_tag(tag)
+        geometric_type = component_type_overrides.get(shape.shape_id) or SHAPE_TO_TYPE.get(shape.kind, "unknown")
+        if tag_type and geometric_type != "unknown" and _project_coarse(tag_type) != _project_coarse(geometric_type):
+            component_type = geometric_type
+        else:
+            component_type = tag_type or geometric_type
         default_confidence = "ocr_matched" if tag else "unresolved"
         graph.add_node(
             label,

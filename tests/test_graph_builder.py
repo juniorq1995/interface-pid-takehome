@@ -91,14 +91,47 @@ def test_build_graph_component_type_override_used_for_unlabeled_shape():
 @pytest.mark.unit
 @pytest.mark.edge_case
 @pytest.mark.authored_claude_sonnet
-def test_build_graph_tag_derived_type_takes_precedence_over_override_edge_case():
-    """If OCR/LLM resolved a real ISA tag on the same shape, that tag-derived
-    type is ground truth and must win over a YOLO class-based override."""
+def test_build_graph_tag_derived_type_refines_within_same_category_edge_case():
+    """A tag-derived type that agrees with the shape's own coarse category
+    (here: both "valve") is a legitimate refinement -- generic "valve" from
+    the YOLO override sharpens to the specific "pressure_control_valve" the
+    tag names. This is the case the original (pre-fix) version of this test
+    was checking, just with a same-category tag instead of a cross-category
+    one -- see the contradiction test below for why that distinction now
+    matters."""
     shapes = [_shape(0, kind="gate_valve")]
-    tags = {0: ("PT-101", "PT-101")}
+    tags = {0: ("PCV-101", "PCV-101")}
     graph = build_graph(shapes, tags, edges=[], component_type_overrides={0: "valve"})
 
-    assert graph.nodes["PT-101"]["component_type"] == "pressure_transmitter"
+    assert graph.nodes["PCV-101"]["component_type"] == "pressure_control_valve"
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_build_graph_contradictory_tag_type_does_not_override_geometry_regression():
+    """Real bug found and fixed live this session: a resolved tag used to
+    unconditionally win over an already-known geometric/YOLO type -- the
+    reasoning being "printed tag text is ground truth." That broke on real
+    data: llm_ocr_assist's oversized-crop framing problem caused a vessel
+    shape (component_type "tank" via SHAPE_TO_TYPE) to get misread as a
+    nearby flow transmitter's tag ("FT-101"), and the old priority order let
+    that wrong-but-real tag silently reclassify the vessel from "tank" to
+    "flow_transmitter" -- measured: page 0 equipment coverage 2/2 -> 0/2.
+    Fixed: a tag-derived type is only trusted when its coarse category
+    (valve/instrument/equipment) agrees with the geometry-derived type's --
+    a genuine cross-category contradiction falls back to geometry instead,
+    since this document's geometry-only typing is independently measured at
+    100% category coverage (see README) while tag-reading is not."""
+    shapes = [_shape(0, kind="rectangle")]  # SHAPE_TO_TYPE["rectangle"] == "tank"
+    tags = {0: ("FT-101", "FT-101")}  # real prefix, but a different coarse category
+
+    graph = build_graph(shapes, tags, edges=[])
+
+    node_data = graph.nodes["FT-101"]
+    assert node_data["component_type"] == "tank"  # geometry wins, not "flow_transmitter"
+    assert node_data["tag"] == "FT-101"  # the tag text itself is still recorded honestly
 
 
 @pytest.mark.unit
@@ -110,3 +143,17 @@ def test_build_graph_missing_override_falls_back_to_shape_to_type_failure_path()
     graph = build_graph(shapes, tags, edges=[], component_type_overrides={})
 
     assert graph.nodes["UNLABELED-0"]["component_type"] == SHAPE_TO_TYPE["circle"]
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+def test_build_graph_tag_type_used_when_geometry_has_no_opinion_happy_path():
+    """When geometry gives no confident type at all (kind not in
+    SHAPE_TO_TYPE, no override -- exactly Phase 1's "unknown" target case),
+    a resolved tag has nothing to contradict and is used as-is."""
+    shapes = [_shape(0, kind="unknown")]
+    tags = {0: ("TI-101", "TI-101")}
+    graph = build_graph(shapes, tags, edges=[])
+
+    assert graph.nodes["TI-101"]["component_type"] == "temperature_indicator"
