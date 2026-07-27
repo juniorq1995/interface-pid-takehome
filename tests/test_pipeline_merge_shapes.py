@@ -178,3 +178,75 @@ def test_symbol_type_assist_unresolved_classification_leaves_shape_unknown_failu
 
     node_data = next(iter(graph.nodes(data=True)))[1]
     assert node_data["component_type"] == "unknown"
+
+
+def _large_shape(kind, w=101, h=437):
+    """A shape sized like a real vessel (F-715A: 101x437px) -- large enough
+    to trip the oversized-crop guard, unlike the 10x10 default test shape."""
+    return DetectedShape(shape_id=0, kind=kind, bbox=(0, 0, w, h), center=(w // 2, h // 2), contour=np.empty((0, 1, 2), dtype=np.int32))
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_llm_ocr_assist_skips_oversized_shapes_regression():
+    """Real bug found live this session: llm_ocr_assist misread F-715A's and
+    F-715B's crops as neighboring tags ("FT-101", "MV-715B") because
+    _crop_label_region's margin-based crop balloons to the shape's full bbox
+    plus margin -- fine for small instrument/valve shapes, but for a 437px-tall
+    vessel it sweeps in unrelated nearby symbols' tags. Those wrong reads then
+    silently overrode the correct "tank"->"equipment" type via graph_builder's
+    tag-priority rule (measured: page 0 equipment coverage 2/2 -> 0/2 with
+    llm_ocr_assist on). Fix: skip LLM tag-reading for any shape whose bbox
+    exceeds _MAX_LABEL_CROP_SHAPE_DIM_PX -- its type is already known reliably
+    from geometry in that case, so a guessed tag can only hurt."""
+    shape = _large_shape("rectangle")  # SHAPE_TO_TYPE["rectangle"] == "tank" -- already known
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[shape]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.read_tag_with_llm") as mock_llm,
+    ):
+        graph = _extract_page_graph(np.zeros((500, 500, 3), dtype=np.uint8), llm_ocr_assist=True)
+
+    mock_llm.assert_not_called()
+    node_data = next(iter(graph.nodes(data=True)))[1]
+    assert node_data["component_type"] == "tank"
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+def test_llm_ocr_assist_still_runs_for_normal_sized_shapes_happy_path():
+    """Confirms the size guard doesn't over-trigger -- ordinary instrument/
+    valve-sized shapes (well under the threshold) still get LLM tag reading."""
+    shape = _shape("circle")  # 10x10, far under the threshold
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[shape]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.read_tag_with_llm", return_value=("PI-101", "PI-101")) as mock_llm,
+    ):
+        graph = _extract_page_graph(np.zeros((100, 100, 3), dtype=np.uint8), llm_ocr_assist=True)
+
+    mock_llm.assert_called_once()
+    assert "PI-101" in graph.nodes
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_symbol_type_assist_also_skips_oversized_unknown_shapes_edge_case():
+    shape = _large_shape("unknown")
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[shape]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.classify_symbol_type_with_llm") as mock_classify,
+    ):
+        graph = _extract_page_graph(np.zeros((500, 500, 3), dtype=np.uint8), symbol_type_assist=True)
+
+    mock_classify.assert_not_called()
+    node_data = next(iter(graph.nodes(data=True)))[1]
+    assert node_data["component_type"] == "unknown"

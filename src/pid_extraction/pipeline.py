@@ -28,6 +28,28 @@ from src.pid_extraction.yolo_detector import (
 )
 
 
+# Real bug found and fixed this session: _crop_label_region's margin-based
+# crop (ocr_tagging.py) always spans the shape's own full bbox plus a small
+# margin -- fine for typical instrument/valve shapes (bbox <=105px on this
+# document), but for large equipment/vessel shapes (F-715A/B: 101x437px,
+# V-745: 270x56px) that crop balloons wide enough to sweep in a *neighboring*
+# symbol's tag instead of the target's own. Confirmed live: llm_ocr_assist
+# read F-715A's crop as "FT-101" and F-715B's as "MV-715B" -- both real,
+# nearby tags, neither belonging to the vessel. Because graph_builder.py's
+# component_type priority trusts a resolved tag over an already-correct
+# SHAPE_TO_TYPE/YOLO-sourced type, those two wrong reads silently reclassified
+# both vessels away from "equipment" (measured: page 0 equipment coverage
+# 2/2 -> 0/2 with llm_ocr_assist on). Deterministic OCR already safely
+# returns None for these same oversized crops (empirically confirmed) --
+# only the LLM's "always guess something" behavior turns the oversized-crop
+# problem into a silent misclassification. Fix: skip LLM tag-reading (both
+# the OCR-assist tag pass and Phase 1 type classification) for any shape
+# whose bbox exceeds this size -- its type is already known reliably from
+# geometry/vector-signature matching in that case, so a guessed tag can only
+# hurt, never help.
+_MAX_LABEL_CROP_SHAPE_DIM_PX = 150
+
+
 def _merge_shapes(raster_shapes, *vector_shape_lists, yolo_shapes=()):
     """Vector-detected symbols first (exact geometry, higher trust when both
     approaches overlap), then raster shapes, then trained-model detections last,
@@ -86,6 +108,8 @@ def _extract_page_graph(
         for shape in shapes:
             if tags[shape.shape_id][0] is not None:
                 continue
+            if max(shape.bbox[2], shape.bbox[3]) > _MAX_LABEL_CROP_SHAPE_DIM_PX:
+                continue
             llm_tag, llm_raw = read_tag_with_llm(image, shape)
             if llm_tag is not None:
                 tags[shape.shape_id] = (llm_tag, llm_raw)
@@ -106,6 +130,8 @@ def _extract_page_graph(
             if shape.shape_id in component_type_overrides:
                 continue
             if SHAPE_TO_TYPE.get(shape.kind, "unknown") != "unknown":
+                continue
+            if max(shape.bbox[2], shape.bbox[3]) > _MAX_LABEL_CROP_SHAPE_DIM_PX:
                 continue
             coarse, subtype, _raw = classify_symbol_type_with_llm(image, shape)
             resolved = subtype or coarse
