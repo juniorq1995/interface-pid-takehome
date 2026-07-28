@@ -31,7 +31,7 @@ import re
 import numpy as np
 import pytesseract
 
-from src.component_types import TAG_PREFIX_TYPES
+from src.component_types import TAG_PATTERN, TAG_PREFIX_TYPES
 from src.pid_extraction.shape_detection import DetectedShape
 
 _EQUIPMENT_PREFIXES = {
@@ -124,3 +124,61 @@ def find_equipment_label_candidates(
         next_id += 1
 
     return candidates
+
+
+# Real gap this closes: F-715A/B (and any other already-known large
+# equipment shape) never gets its own tag read at all -- the oversized-crop
+# guard in pipeline.py correctly blocks the generic label-crop heuristic on
+# them (that's the fix for the equipment-type-corruption bug), but the net
+# effect is their real tag text is structurally unreachable, not just hard
+# to read. This is a *targeted* search around a shape already known to be
+# equipment, not the generic oversized crop -- a wrong read here can only
+# ever surface equipment-prefixed tag text, it can't misclassify the shape
+# the way the original bug did.
+_KNOWN_SHAPE_SEARCH_RADIUS_PX = 300
+
+
+def find_tag_for_known_equipment_shape(image: np.ndarray, shape: DetectedShape) -> str | None:
+    """Search a generous region around an already-detected equipment shape
+    for its real tag text, returning the nearest valid match or None.
+
+    Uses the real, strict TAG_PATTERN (not the tolerant discovery pattern
+    above) after normalizing known separator corruptions ("=" / "/" read in
+    place of "-") -- this needs to produce real tag text for tag-accuracy
+    scoring, not just a location to search."""
+    x, y, w, h = shape.bbox
+    cx, cy = x + w / 2.0, y + h / 2.0
+    ih, iw = image.shape[:2]
+    x0 = max(0, int(cx - _KNOWN_SHAPE_SEARCH_RADIUS_PX))
+    y0 = max(0, int(cy - _KNOWN_SHAPE_SEARCH_RADIUS_PX))
+    x1 = min(iw, int(cx + _KNOWN_SHAPE_SEARCH_RADIUS_PX))
+    y1 = min(ih, int(cy + _KNOWN_SHAPE_SEARCH_RADIUS_PX))
+    crop = image[y0:y1, x0:x1]
+    if crop.size == 0:
+        return None
+
+    data = pytesseract.image_to_data(crop, output_type=pytesseract.Output.DICT)
+    best_tag: str | None = None
+    best_dist = float("inf")
+
+    for i, word in enumerate(data["text"]):
+        word = word.strip()
+        if not word:
+            continue
+        normalized = re.sub(r"[=/]", "-", word.upper())
+        match = TAG_PATTERN.search(normalized)
+        if not match:
+            continue
+        tag = match.group(1)
+        prefix = tag.split("-")[0]
+        if prefix not in _EQUIPMENT_PREFIXES:
+            continue
+
+        wx, wy, ww, wh = data["left"][i], data["top"][i], data["width"][i], data["height"][i]
+        wcx, wcy = x0 + wx + ww / 2.0, y0 + wy + wh / 2.0
+        dist = ((wcx - cx) ** 2 + (wcy - cy) ** 2) ** 0.5
+        if dist < best_dist:
+            best_dist = dist
+            best_tag = tag
+
+    return best_tag

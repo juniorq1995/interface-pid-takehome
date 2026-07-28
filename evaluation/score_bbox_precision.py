@@ -61,7 +61,9 @@ def _dist(p1: tuple[float, float], p2: tuple[float, float]) -> float:
     return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
 
-def score(ground_truth_path: Path, max_center_distance_px: float) -> dict[str, Any]:
+def score(
+    ground_truth_path: Path, max_center_distance_px: float, equipment_label_discovery: bool = False,
+) -> dict[str, Any]:
     gt = json.loads(ground_truth_path.read_text())
     by_page: dict[int, list[dict[str, Any]]] = {}
     for c in gt["components"]:
@@ -69,7 +71,9 @@ def score(ground_truth_path: Path, max_center_distance_px: float) -> dict[str, A
 
     results = []
     for page, components in sorted(by_page.items()):
-        graph = extract_pid_graph(PDF_PATH, page=page, dpi=300, use_yolo=True)
+        graph = extract_pid_graph(
+            PDF_PATH, page=page, dpi=300, use_yolo=True, equipment_label_discovery=equipment_label_discovery,
+        )
         detections_by_category: dict[str, list[list[float]]] = {}
         for _, d in graph.nodes(data=True):
             detections_by_category.setdefault(_coarse(d.get("component_type")), []).append(d["bbox"])
@@ -118,10 +122,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ground-truth", type=Path, default=GROUND_TRUTH_PATH)
     parser.add_argument("--max-center-distance-px", type=float, default=120.0)
+    parser.add_argument("--equipment-label-discovery", action="store_true")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
-    result = score(args.ground_truth, args.max_center_distance_px)
+    result = score(args.ground_truth, args.max_center_distance_px, args.equipment_label_discovery)
 
     print(f"Bbox localization score -- sample of {result['sample_size']} hand-verified components")
     print()

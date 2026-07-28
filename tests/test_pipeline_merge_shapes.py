@@ -316,3 +316,102 @@ def test_equipment_label_discovery_checked_only_against_vessel_shapes_edge_case(
     call_kwargs = mock_find.call_args
     passed_shapes = call_kwargs.args[1] if len(call_kwargs.args) > 1 else call_kwargs.kwargs.get("existing_equipment_shapes")
     assert passed_shapes == [vessel]
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_anomalous_oversized_valve_shape_filtered_out_regression():
+    """Regression for the real gap found diagnosing the tag-recall gap
+    directly: deterministic OCR against every valve-typed shape on page 0
+    turned up several with bboxes like 48x495px -- nearly 500px tall, vs.
+    every real valve/instrument bbox hand-verified this session topping out
+    around 105px. These are almost certainly malformed/mis-scaled YOLO
+    detections (confirmed: pure OCR garbage, not near-misses), inflating the
+    already-disclosed raw over-detection counts. Must be dropped entirely,
+    not just skipped for tag-reading."""
+    normal_valve = _shape("bowtie")  # 10x10, well under the threshold
+    anomalous_valve = DetectedShape(
+        shape_id=1, kind="bowtie", bbox=(0, 0, 48, 495), center=(24, 247),
+        contour=np.empty((0, 1, 2), dtype=np.int32),
+    )
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[normal_valve, anomalous_valve]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+    ):
+        graph = _extract_page_graph(np.zeros((600, 600, 3), dtype=np.uint8))
+
+    assert graph.number_of_nodes() == 1  # only the normal valve survives
+    (node_data,) = [d for _, d in graph.nodes(data=True)]
+    assert node_data["bbox"] == [0, 0, 10, 10]
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_anomalous_size_filter_exempts_equipment_edge_case():
+    """The size filter must not touch equipment -- large equipment (vessels,
+    discovered labels) is legitimate; only valve/instrument-coarse shapes
+    get filtered."""
+    large_vessel = _large_shape("rectangle")  # 101x437px, real F-715A scale
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[large_vessel]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+    ):
+        graph = _extract_page_graph(np.zeros((600, 600, 3), dtype=np.uint8))
+
+    assert graph.number_of_nodes() == 1
+    (node_data,) = [d for _, d in graph.nodes(data=True)]
+    assert node_data["component_type"] == "tank"
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+def test_equipment_label_discovery_finds_tag_for_known_oversized_shape_happy_path():
+    """Closes the gap the size guard itself created: F-715A/B-style shapes
+    never get their own tag read via the normal path (by design, to prevent
+    the oversized-crop misread bug) -- this targeted search is the intended
+    way their real tag text becomes reachable at all."""
+    vessel = _large_shape("rectangle")  # 101x437px, tag-reading normally blocked
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_circle_symbols", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_valve_symbols", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_vessel_symbols", return_value=[vessel]),
+        patch("src.pid_extraction.pipeline.extract_line_segments", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.find_equipment_label_candidates", return_value=[]),
+        patch("src.pid_extraction.pipeline.find_tag_for_known_equipment_shape", return_value="F-715A") as mock_find_tag,
+    ):
+        graph = _extract_page_graph(
+            np.zeros((600, 600, 3), dtype=np.uint8), pdf_path="fake.pdf", equipment_label_discovery=True,
+        )
+
+    mock_find_tag.assert_called_once()
+    assert "F-715A" in graph.nodes
+    assert graph.nodes["F-715A"]["tag_confidence"] == "equipment_label_discovery"
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_known_equipment_tag_search_off_by_default_edge_case():
+    vessel = _large_shape("rectangle")
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_circle_symbols", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_valve_symbols", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_vessel_symbols", return_value=[vessel]),
+        patch("src.pid_extraction.pipeline.extract_line_segments", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.find_tag_for_known_equipment_shape") as mock_find_tag,
+    ):
+        _extract_page_graph(np.zeros((600, 600, 3), dtype=np.uint8), pdf_path="fake.pdf")
+
+    mock_find_tag.assert_not_called()

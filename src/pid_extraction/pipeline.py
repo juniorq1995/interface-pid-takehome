@@ -5,12 +5,15 @@ from pathlib import Path
 
 import networkx as nx
 
-from src.component_types import SHAPE_TO_TYPE, type_from_tag
+from src.component_types import SHAPE_TO_TYPE, project_coarse_category, type_from_tag
 from src.pid_extraction.connector_detection import (
     detect_connections,
     detect_connections_from_vector_segments,
 )
-from src.pid_extraction.equipment_label_discovery import find_equipment_label_candidates
+from src.pid_extraction.equipment_label_discovery import (
+    find_equipment_label_candidates,
+    find_tag_for_known_equipment_shape,
+)
 from src.pid_extraction.graph_builder import build_graph
 from src.pid_extraction.llm_ocr_assist import read_tag_with_llm
 from src.pid_extraction.ocr_tagging import extract_tag
@@ -49,6 +52,32 @@ from src.pid_extraction.yolo_detector import (
 # geometry/vector-signature matching in that case, so a guessed tag can only
 # hurt, never help.
 _MAX_LABEL_CROP_SHAPE_DIM_PX = 150
+
+# Real bug found while diagnosing the tag-recall gap directly (not
+# theorized): checked deterministic OCR against every valve-typed shape on
+# page 0 post-fix and found several with bboxes like 48x495px and 87x490px
+# -- nearly 500px tall. Every real valve/instrument bbox hand-verified this
+# session, across dozens of examples, tops out around 105px in either
+# dimension. These oversized shapes are almost certainly malformed/mis-scaled
+# YOLO detections (a box swallowing a whole vertical pipe run), not real
+# symbols with a real tag to read -- confirmed their OCR output is pure
+# garbage ('N\n\n25', 'WW', 'O T', ...), not near-misses. They were silently
+# inflating this project's already-disclosed raw over-detection counts (36
+# vs. 29 real valves, etc.) with detections that were never going to be real.
+# Equipment is exempt -- large equipment (vessels, discovered labels) is
+# legitimate; only valve/instrument-coarse shapes get filtered.
+_MAX_PLAUSIBLE_VALVE_INSTRUMENT_DIM_PX = 150
+
+
+def _filter_anomalous_valve_instrument_shapes(shapes, component_type_overrides):
+    kept = []
+    for shape in shapes:
+        geometric_type = component_type_overrides.get(shape.shape_id) or SHAPE_TO_TYPE.get(shape.kind, "unknown")
+        coarse = project_coarse_category(geometric_type)
+        if coarse in ("valve", "instrument") and max(shape.bbox[2], shape.bbox[3]) > _MAX_PLAUSIBLE_VALVE_INSTRUMENT_DIM_PX:
+            continue
+        kept.append(shape)
+    return kept
 
 
 def _merge_shapes(raster_shapes, *vector_shape_lists, yolo_shapes=()):
@@ -99,6 +128,7 @@ def _extract_page_graph(
     shapes, component_type_overrides = _merge_shapes(
         raster_shapes, circle_shapes, valve_shapes, vessel_shapes, yolo_shapes=yolo_shapes
     )
+    shapes = _filter_anomalous_valve_instrument_shapes(shapes, component_type_overrides)
 
     if equipment_label_discovery:
         # Real gap this closes: compound equipment symbols (pumps, exchangers,
@@ -117,6 +147,33 @@ def _extract_page_graph(
     tags = {shape.shape_id: extract_tag(image, shape) for shape in shapes}
 
     tag_sources: dict[int, str] = {}
+
+    if equipment_label_discovery:
+        # Closes a gap the size guard itself created: F-715A/B (and any other
+        # already-known large equipment shape) never gets its own tag read at
+        # all, by design -- extract_tag runs unconditionally above and
+        # reliably returns None on these oversized crops (safe, but also
+        # useless), and the llm_ocr_assist loop below explicitly skips
+        # anything over _MAX_LABEL_CROP_SHAPE_DIM_PX. Both are correct
+        # protections against the oversized-crop misread bug documented
+        # above -- but the net effect is these tags are structurally
+        # unreachable, not just hard. find_tag_for_known_equipment_shape
+        # reuses the same real-vs-corrupted-separator tolerant search as
+        # label discovery, targeted at a shape already known to be equipment,
+        # so a wrong read here can only ever supply equipment-prefixed tag
+        # text -- it can't misclassify the shape the way the original bug did.
+        for shape in shapes:
+            if tags[shape.shape_id][0] is not None:
+                continue
+            geometric_type = component_type_overrides.get(shape.shape_id) or SHAPE_TO_TYPE.get(shape.kind, "unknown")
+            if project_coarse_category(geometric_type) != "equipment":
+                continue
+            if max(shape.bbox[2], shape.bbox[3]) <= _MAX_LABEL_CROP_SHAPE_DIM_PX:
+                continue
+            found_tag = find_tag_for_known_equipment_shape(image, shape)
+            if found_tag is not None:
+                tags[shape.shape_id] = (found_tag, found_tag)
+                tag_sources[shape.shape_id] = "equipment_label_discovery"
     if llm_ocr_assist:
         # Deterministic OCR is always tried first (fast, free); the LLM is only
         # invoked for shapes it couldn't tag — see llm_ocr_assist.py for why

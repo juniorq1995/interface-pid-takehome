@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from src.pid_extraction.equipment_label_discovery import find_equipment_label_candidates
+from src.pid_extraction.equipment_label_discovery import find_equipment_label_candidates, find_tag_for_known_equipment_shape
 from src.pid_extraction.shape_detection import DetectedShape
 
 
@@ -143,3 +143,86 @@ def test_no_ocr_hits_returns_empty_list_failure_path():
         candidates = find_equipment_label_candidates(_image(), existing_equipment_shapes=[])
 
     assert candidates == []
+
+
+def _vessel_shape():
+    """Mirrors F-715A's real bbox: 101x437px, well beyond the label-crop
+    size guard."""
+    return DetectedShape(
+        shape_id=0, kind="rectangle", bbox=(2010, 1600, 101, 437), center=(2061, 1818),
+        contour=np.empty((0, 1, 2), dtype=np.int32),
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+@patch("src.pid_extraction.equipment_label_discovery.pytesseract.image_to_data")
+def test_find_tag_for_known_equipment_shape_happy_path(mock_ocr):
+    mock_ocr.return_value = _ocr_data([("F-715A", 200, 200, 60, 20)])
+    tag = find_tag_for_known_equipment_shape(_image(), _vessel_shape())
+
+    assert tag == "F-715A"
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+@patch("src.pid_extraction.equipment_label_discovery.pytesseract.image_to_data")
+def test_find_tag_for_known_equipment_shape_normalizes_corrupted_separator_regression(mock_ocr):
+    """Regression for the same real, confirmed-live OCR quirk as the
+    discovery-candidate path: Tesseract reads this document's tag hyphens as
+    "=" often enough to matter. Unlike discovery, this path must produce the
+    real tag *text* (for tag-accuracy scoring), so the corrupted separator is
+    normalized back to "-" rather than just used to find a location."""
+    mock_ocr.return_value = _ocr_data([("F=715A", 200, 200, 60, 20)])
+    tag = find_tag_for_known_equipment_shape(_image(), _vessel_shape())
+
+    assert tag == "F-715A"
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+@patch("src.pid_extraction.equipment_label_discovery.pytesseract.image_to_data")
+def test_find_tag_for_known_equipment_shape_ignores_non_equipment_prefix_edge_case(mock_ocr):
+    """A nearby valve tag must not be picked up as the equipment's own tag --
+    this is exactly the class of bug the oversized-crop guard exists to
+    prevent; this targeted search must not reintroduce it."""
+    mock_ocr.return_value = _ocr_data([("MV-715-01", 200, 200, 60, 20)])
+    tag = find_tag_for_known_equipment_shape(_image(), _vessel_shape())
+
+    assert tag is None
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+@patch("src.pid_extraction.equipment_label_discovery.pytesseract.image_to_data")
+def test_find_tag_for_known_equipment_shape_picks_nearest_of_multiple_happy_path(mock_ocr):
+    # Search crop is 600x600 (300px radius), so the shape's own center sits
+    # at crop-local (300, 300) when nothing clamps against the image edge.
+    mock_ocr.return_value = _ocr_data([
+        ("F-999Z", 10, 10, 60, 20),  # far corner of the search crop
+        ("F-715A", 290, 290, 60, 20),  # right next to the shape's actual center
+    ])
+    tag = find_tag_for_known_equipment_shape(_image(3500, 3500), _vessel_shape())
+
+    assert tag == "F-715A"
+
+
+@pytest.mark.unit
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_find_tag_for_known_equipment_shape_empty_crop_returns_none_failure_path():
+    """A shape whose search region falls entirely outside the image must not
+    raise, and must not call OCR at all."""
+    shape = DetectedShape(
+        shape_id=0, kind="rectangle", bbox=(10000, 10000, 101, 437), center=(10050, 10200),
+        contour=np.empty((0, 1, 2), dtype=np.int32),
+    )
+    with patch("src.pid_extraction.equipment_label_discovery.pytesseract.image_to_data") as mock_ocr:
+        tag = find_tag_for_known_equipment_shape(_image(), shape)
+        mock_ocr.assert_not_called()
+    assert tag is None
