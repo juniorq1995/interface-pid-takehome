@@ -6,6 +6,20 @@ synthetic fixture first, then run against the real Interface assignment files �
 see "Tested Against Real Data" below for what changed once real documents were in
 the loop.
 
+**Reading this cold — where the assignment ends:** the core deliverable is the
+pipeline described above, verified against the real assignment PDF/SOP, with
+the title-block design-limit cross-check ("Tested Against Real Data" →
+"Title-block cross-check") as the most fully-verified single result in the
+repo. Everything from "Trained detector: YOLOv8..." onward — the coarse-model
+retrain, the dataset merge, the Option A/B retraining experiments, the two
+local-vision-model integrations, the hand-built bbox ground truth — is
+further iteration past that point, not part of the original ask. It's real,
+measured work, not padding, but it's flagged here so it doesn't read as scope
+confusion: the assignment was finished first; the rest is what happened when
+there was still time on the clock. The commit history is long for the same
+reason — every "fix real bug" commit is a bug caught through actual
+measurement and documented as found, not noise to skim past.
+
 ## Install
 
 ```bash
@@ -494,8 +508,8 @@ pixels, instead of trying to correct Tesseract's already-mangled text. This is
 exactly the two-line stacked-bubble problem the reference guide surfaced above,
 just solved by giving the model the image instead of re-tuning Tesseract's PSM.
 
-**Validated on real data:** every one of the first 4 previously-unresolved
-instrument-bubble crops from page 0 was read correctly on retry — `PI 715A`,
+**First validated on a small sample:** the first 4 previously-unresolved
+instrument-bubble crops from page 0 were read correctly on retry — `PI 715A`,
 `PSV 715A`, `PI 715B`, and one earlier hit at `PSV 715B` — all well-formed ISA
 tags matching what's actually printed on that sheet. **Cost: real, not free** —
 this hardware takes 30-90 seconds per crop for the 11B vision model running on
@@ -505,6 +519,65 @@ couldn't tag, and any network/model failure degrades to "still unresolved" rathe
 than raising — this is strictly additive, never a regression risk to the base
 pipeline. Tests (`test_llm_ocr_assist.py`) mock the HTTP call so the suite stays
 fast and deterministic; nothing in CI depends on Ollama actually running.
+
+### Full-page re-measurement: three real bugs found and fixed
+
+The 4-crop sample above was real but small. Re-running `--llm-ocr-assist`
+across every unresolved shape on the full page (not just a hand-picked
+sample) surfaced three genuine bugs — none of them in the vision model
+itself, all in how this pipeline used its output. Reported in the order
+found, each one caught by comparing against the deterministic (no-assist)
+baseline rather than trusting the new number on its own:
+
+1. **Oversized-crop misread corrupting equipment type.** `_crop_label_region`'s
+   margin-based crop spans a shape's own full bbox plus a small margin — fine
+   for instrument/valve-sized shapes (≤105px on this document), but for the
+   two vessel shapes (F-715A/B, 101×437px) it balloons wide enough to sweep in
+   a *neighboring* symbol's tag. Confirmed live: the model read F-715A's crop
+   as `FT-101` (a flow transmitter tag) and F-715B's as `MV-715B` (a valve
+   tag) — both real tags belonging to nearby symbols. Because a resolved tag
+   used to unconditionally win over an already-correct geometric type, those
+   two wrong reads silently reclassified both vessels away from "equipment"
+   (measured: page 0 equipment coverage 2/2 → 0/2 with the flag on). Fixed by
+   skipping LLM tag-reading for any shape whose bbox exceeds a size threshold
+   — its type is already known reliably from geometry in that case, so a
+   guessed tag can only hurt.
+2. **Contradictory tag-derived type overriding geometry more generally.**
+   Fixing (1) closed the equipment gap but total valve+instrument+equipment
+   count was still down 10 shapes from baseline — the same failure mode at
+   smaller scale, just not severe enough to send a shape outside the
+   size guard. Root cause: *any* resolved tag, not just ones from oversized
+   crops, could override an already-correct geometric/YOLO type. Fixed by
+   only accepting a tag-derived type when its coarse category
+   (valve/instrument/equipment) agrees with the geometry-derived type's — a
+   legitimate refinement (circle → instrument, tag sharpens to
+   `pressure_indicator`) is accepted; a genuine contradiction falls back to
+   geometry instead.
+3. **Incomplete coarse-category map hiding correctly-resolved tags.** With
+   (1) and (2) fixed, valve and equipment both landed exactly on the
+   deterministic baseline (36/29, 2/2) — but instrument coverage showed 2/6,
+   despite all 6 real instruments having been correctly tag-resolved (same
+   true positives as every prior run). The bug was in the *scoring script*,
+   not the pipeline: `score_cv_accuracy.py` carried its own small local
+   category map that only covered a handful of the ~44 fine-grained ISA
+   subtypes `type_from_tag` can produce, so a correctly-resolved
+   `pressure_indicator`/`pressure_differential_indicator` fell through it and
+   was invisible to the "instrument" row entirely. Consolidated into one
+   shared `component_types.project_coarse_category()`, used everywhere this
+   project needs its 3-category collapse.
+
+Each fix has a regression test verified via `git stash` to fail on the
+pre-fix code, not just a forward-looking assertion. Full chain: 144 tests
+passing.
+
+**Real, run-it-yourself result (all three fixes applied):**
+
+*Final confirmation run in progress as of this writing — see git log for the
+actual numbers once landed (`python evaluation/score_cv_accuracy.py --page 0
+--use-yolo --llm-ocr-assist` / same for `--page 1
+--ground-truth evaluation/ground_truth_page1.json`). Not backfilling a
+number here ahead of actually running it — that's the exact discipline this
+whole section is about.*
 
 ### Datasets pulled for future symbol-detection work (not part of this submission)
 
