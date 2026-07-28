@@ -1,6 +1,12 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.coverage
+
+# ultralytics auto-downloads a pretrained base checkpoint into the cwd the
+# first time a given YOLO variant is used for transfer learning (e.g.
+# yolov8s.pt for Option B's training run) — not something this repo commits.
+*.pt
 
 # R&D datasets for future symbol-detection work (see README "Next Steps") —
 # too large for this repo, not part of the take-home submission itself.
