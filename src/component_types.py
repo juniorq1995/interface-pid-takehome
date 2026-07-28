@@ -120,3 +120,38 @@ def coarse_category(component_type: str | None) -> str | None:
     if component_type is None:
         return None
     return COARSE_CATEGORY.get(component_type, component_type)
+
+
+# This document's own ground truth (evaluation/ground_truth_page*.json) uses
+# exactly 3 categories: valve/instrument/equipment. coarse_category() above
+# deliberately does NOT collapse to that scheme -- crossref/compare.py needs
+# the finer pump/tank/compressor/heat_exchanger split preserved to compare
+# against the SOP's own declared_types vocabulary, and collapsing it there
+# would silently break TYPE_MISMATCH detection. This is the separate
+# 3-category collapse, used wherever code needs to score/compare against
+# this project's ground truth specifically (graph_builder.py's tag-vs-
+# geometry trust check, evaluation/score_cv_accuracy.py's category-coverage
+# table, evaluation/score_bbox_precision.py's category matching).
+#
+# Real bug this closes (found live): score_cv_accuracy.py used to carry its
+# own small, incomplete local mapping (4 entries) that only covered a few of
+# TAG_PREFIX_TYPES' ~44 fine-grained values -- once llm_ocr_assist started
+# correctly resolving real ISA tags (e.g. "PI 715A" -> "pressure_indicator"),
+# those newly-legitimate fine subtypes fell through the incomplete map and
+# vanished from the "instrument" row of the coverage table entirely (measured:
+# page 0 instrument coverage showed 2/6 despite all 6 real instruments having
+# been correctly tag-resolved -- 4 of the 6 were real "pressure_indicator"/
+# "pressure_differential_indicator" resolutions, invisible to the old map).
+# Pattern-matched rather than an explicit lookup table so it doesn't drift out
+# of sync as TAG_PREFIX_TYPES grows.
+_PROJECT_EQUIPMENT_TYPES = {"tank", "pump", "compressor", "heat_exchanger", "filter"}
+
+
+def project_coarse_category(component_type: str | None) -> str | None:
+    if component_type is None or component_type == "unknown":
+        return None
+    if "valve" in component_type:
+        return "valve"
+    if component_type in _PROJECT_EQUIPMENT_TYPES:
+        return "equipment"
+    return "instrument"

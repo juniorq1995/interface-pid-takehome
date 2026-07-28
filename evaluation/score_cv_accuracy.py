@@ -62,12 +62,18 @@ def score(
     detected_by_category = Counter(d.get("component_type", "unknown") for _, d in graph.nodes(data=True))
     # Ground truth categories are coarse (instrument/valve/equipment); collapse
     # detected component_type (e.g. "pressure_indicator") the same way for a fair count.
-    coarse_map = {"instrument": "instrument", "valve": "valve", "safety_valve": "valve", "tank": "equipment"}
-    from src.component_types import coarse_category
+    # Real bug found and fixed here: this used to be a small 4-entry local dict
+    # that didn't cover most of TAG_PREFIX_TYPES' ~44 fine-grained values, so a
+    # correctly tag-resolved "pressure_indicator"/"pressure_differential_indicator"
+    # (etc.) silently vanished from the "instrument" row entirely once
+    # llm_ocr_assist started actually resolving real tags -- measured: page 0
+    # instrument coverage showed 2/6 despite all 6 real instruments having been
+    # correctly read. Now uses the shared, complete project_coarse_category().
+    from src.component_types import project_coarse_category
 
     detected_coarse = Counter()
     for _, d in graph.nodes(data=True):
-        coarse = coarse_map.get(d.get("component_type"), coarse_category(d.get("component_type")) or "unknown")
+        coarse = project_coarse_category(d.get("component_type")) or "unknown"
         detected_coarse[coarse] += 1
 
     category_coverage = {}

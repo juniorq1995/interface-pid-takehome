@@ -1,6 +1,6 @@
 import pytest
 
-from src.component_types import coarse_category, type_from_tag
+from src.component_types import coarse_category, project_coarse_category, type_from_tag
 
 
 @pytest.mark.unit
@@ -37,3 +37,56 @@ def test_coarse_category_none_input_edge_case():
     # No exception is raised for None — a graceful boundary case, not a
     # failure_path (that mark is reserved for tests asserting an error/raise).
     assert coarse_category(None) is None
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+def test_project_coarse_category_collapses_fine_instrument_subtypes_to_instrument():
+    """Regression: score_cv_accuracy.py used to carry its own 4-entry local
+    coarse map that didn't cover most of TAG_PREFIX_TYPES' ~44 fine-grained
+    values -- a correctly tag-resolved "pressure_indicator" or
+    "pressure_differential_indicator" (etc.) fell through it and vanished
+    from the "instrument" category-coverage row entirely once
+    llm_ocr_assist started resolving real tags. This is the shared,
+    complete replacement."""
+    assert project_coarse_category("pressure_indicator") == "instrument"
+    assert project_coarse_category("pressure_differential_indicator") == "instrument"
+    assert project_coarse_category("hand_off_auto_switch") == "instrument"
+    assert project_coarse_category("thermowell") == "instrument"
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+def test_project_coarse_category_collapses_valve_and_equipment_variants():
+    assert project_coarse_category("safety_valve") == "valve"
+    assert project_coarse_category("pressure_control_valve") == "valve"
+    assert project_coarse_category("emergency_shutdown_valve") == "valve"
+    assert project_coarse_category("tank") == "equipment"
+    assert project_coarse_category("pump") == "equipment"
+    assert project_coarse_category("compressor") == "equipment"
+    assert project_coarse_category("heat_exchanger") == "equipment"
+    assert project_coarse_category("filter") == "equipment"
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_project_coarse_category_none_and_unknown_edge_case():
+    assert project_coarse_category(None) is None
+    assert project_coarse_category("unknown") is None
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_project_coarse_category_differs_from_coarse_category_for_equipment_subtypes_edge_case():
+    """The two functions are deliberately different: coarse_category() keeps
+    "tank"/"pump" un-collapsed for crossref/compare.py's SOP declared_types
+    comparison; project_coarse_category() collapses them to "equipment" for
+    this project's own 3-category ground truth. Pinning the divergence so a
+    future "simplification" doesn't accidentally merge them back together."""
+    assert coarse_category("tank") == "tank"
+    assert project_coarse_category("tank") == "equipment"

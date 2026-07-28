@@ -3,30 +3,8 @@ from __future__ import annotations
 
 import networkx as nx
 
-from src.component_types import SHAPE_TO_TYPE, type_from_tag
+from src.component_types import SHAPE_TO_TYPE, project_coarse_category, type_from_tag
 from src.pid_extraction.shape_detection import DetectedShape
-
-# Local to this module, deliberately not src.component_types.coarse_category:
-# that function is used by crossref/compare.py to compare against the SOP's
-# own declared_types vocabulary ("pump", "tank", "compressor", ...), which
-# needs the fine-grained split preserved -- collapsing it here would silently
-# break TYPE_MISMATCH detection, the best-verified feature in this project.
-# This is a narrower "does a tag-derived type roughly agree with a
-# geometry-derived type" check, scoped only to this file's own tag-vs-geometry
-# trust decision below. Pattern-matched rather than an explicit lookup table so
-# it doesn't silently drift out of sync as TAG_PREFIX_TYPES grows (e.g. a
-# future *_valve entry is caught automatically; an explicit dict wouldn't be).
-_EQUIPMENT_TYPES = {"tank", "pump", "compressor", "heat_exchanger", "filter"}
-
-
-def _project_coarse(component_type: str | None) -> str | None:
-    if component_type is None or component_type == "unknown":
-        return None
-    if "valve" in component_type:
-        return "valve"
-    if component_type in _EQUIPMENT_TYPES:
-        return "equipment"
-    return "instrument"
 
 
 def build_graph(
@@ -80,7 +58,7 @@ def build_graph(
         # this only guards component_type).
         tag_type = tag and type_from_tag(tag)
         geometric_type = component_type_overrides.get(shape.shape_id) or SHAPE_TO_TYPE.get(shape.kind, "unknown")
-        if tag_type and geometric_type != "unknown" and _project_coarse(tag_type) != _project_coarse(geometric_type):
+        if tag_type and geometric_type != "unknown" and project_coarse_category(tag_type) != project_coarse_category(geometric_type):
             component_type = geometric_type
         else:
             component_type = tag_type or geometric_type

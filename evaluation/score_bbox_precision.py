@@ -27,17 +27,12 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.component_types import coarse_category
+from src.component_types import project_coarse_category
 from src.pid_extraction.pipeline import extract_pid_graph
-
-# Same coarse-category collapse score_cv_accuracy.py applies at scoring time --
-# the graph's own component_type is finer-grained (e.g. "tank", "safety_valve")
-# than the 3 categories this ground truth sample uses.
-_COARSE_MAP = {"instrument": "instrument", "valve": "valve", "safety_valve": "valve", "tank": "equipment"}
 
 
 def _coarse(component_type: str | None) -> str:
-    return _COARSE_MAP.get(component_type, coarse_category(component_type) or "unknown")
+    return project_coarse_category(component_type) or "unknown"
 
 GROUND_TRUTH_PATH = Path(__file__).resolve().parent / "ground_truth_bbox_sample.json"
 PDF_PATH = Path(__file__).resolve().parent.parent / "data" / "pid" / "diagram.pdf"
