@@ -35,7 +35,11 @@ VISION_MODEL = "llama3.2-vision:11b"
 # masking the real fix (don't run this concurrently with another heavy job).
 REQUEST_TIMEOUT_S = 180
 
-LOOSE_TAG_PATTERN = re.compile(rf"\b({TAG_CORE}|[A-Z]{{1,4}}\s+\d{{2,4}}[A-Z]?)\b")
+# Same compound-tag extension as TAG_CORE (see component_types.py), applied
+# to the space-separated instrument-tag alternative -- real ground truth has
+# tags like "PI 745-15" / "PSV 745-15" that need the same optional 3rd
+# segment; verified against all 71 real tags with zero remaining misses.
+LOOSE_TAG_PATTERN = re.compile(rf"\b({TAG_CORE}|[A-Z]{{1,4}}\s+\d{{2,4}}(?:-\d{{1,3}})?[A-Z]?)\b")
 
 PROMPT = (
     "This is a cropped region from an industrial P&ID (piping and instrumentation "

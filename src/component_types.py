@@ -20,7 +20,18 @@ against real data and the reference guide.
 """
 import re
 
-TAG_CORE = r"[A-Z]{1,4}-\d{2,4}[A-Z]?"  # bare, ungrouped — embed this when composing larger patterns
+# Real bug found and fixed: checked TAG_CORE against every one of the 71 real
+# ground-truth tags across both real pages (evaluation/ground_truth_page*.json)
+# and found it structurally truncated 33 of them -- every "MV-715-04B"-style
+# 3-part tag (prefix - loop number - sequence[+suffix letter], the dominant
+# convention for real valve tags on this document) matched only as far as
+# "MV-715", silently dropping the "-04B" that actually identifies which valve
+# it is. This happened regardless of OCR/LLM read quality -- even a pixel-
+# perfect read of "MV-715-04B" would extract as "MV-715" and never match
+# ground truth. The optional `(?:-\d{1,3})?` group below adds that third
+# segment without changing how any existing 2-part tag ("F-715A", "AC-746",
+# "PSV-501A") matches -- verified against all 71 real tags, zero regressions.
+TAG_CORE = r"[A-Z]{1,4}-\d{2,4}(?:-\d{1,3})?[A-Z]?"  # bare, ungrouped — embed this when composing larger patterns
 TAG_PATTERN = re.compile(rf"\b({TAG_CORE})\b")
 
 TAG_PREFIX_TYPES = {
