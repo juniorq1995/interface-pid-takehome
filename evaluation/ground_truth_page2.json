@@ -1,0 +1,43 @@
+{
+  "_methodology": "Hand-annotated by visual inspection of data/pid/diagram.pdf page 2 (AC-746 After-Cooler / E-742 NGL Preheat Exchanger sheet) rendered at 300 DPI, cropped into three overlapping regional clusters for legibility. This page had zero ground truth of any kind before this file -- unlike pages 0/1, category coverage and tag accuracy on page 2 were never measured at all this whole session, despite AC-746/E-742's vector-signature detection being investigated (and rejected) in src/pid_extraction/vector_equipment.py. Same digit-corruption caveat already documented elsewhere in this README applies here too, and is handled the same way: excluded rather than guessed. Two specific items excluded for that reason: a valve read as either 'MV-742-06' or 'MV-742-08' (ambiguous at this resolution) near the AC-746 fan motor, and a second circle labeled 'TW 742' near PIT-742 that may be a real second physical thermowell sharing that loop number or may be a misread of a different tag -- not confident enough to assert either way. Also excluded: MV-742-D2 (real valve, but a non-standard letter+digit third segment TAG_CORE's numeric-only extension doesn't cover -- a real, disclosed gap in the tag convention this project's regex handles, not a ground-truth omission). Not a claim of exhaustiveness -- this is a real, substantial sample (29 components), not a full inventory of every symbol on the sheet.",
+  "source_pdf": "data/pid/diagram.pdf",
+  "page_index": 2,
+  "components": [
+    {"tag": "AC-746", "category": "equipment", "symbol": "after_cooler"},
+    {"tag": "E-742", "category": "equipment", "symbol": "shell_and_tube_exchanger"},
+
+    {"tag": "MV-746-03", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-746-04", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-746-05", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-746-08", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-746-09", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-746-10", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-742-07", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-742-13", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-742-14", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-742-15", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-742-16", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-742-17", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-742-18", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-735-15", "category": "valve", "symbol": "bowtie"},
+    {"tag": "MV-735-16", "category": "valve", "symbol": "bowtie"},
+
+    {"tag": "PI 746", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TI 744", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TW 744", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TI 742", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TW 742", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "PIT 742", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TI 745", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TW 745", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "VT 746", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TY 742", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TCV 742", "category": "instrument", "symbol": "circle_bubble"},
+    {"tag": "TIC 742", "category": "instrument", "symbol": "rectangle_box"}
+  ],
+  "excluded_uncertain": [
+    {"reason": "digit ambiguous at this resolution (06 vs 08)", "approx_tag": "MV-742-0X"},
+    {"reason": "possible duplicate/misread of TW 742 or a distinct nearby tag", "approx_tag": "TW 742 (second instance)"},
+    {"reason": "non-standard letter+digit third segment, outside this project's TAG_CORE convention", "tag": "MV-742-D2"}
+  ]
+}
