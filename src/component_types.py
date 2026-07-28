@@ -155,7 +155,19 @@ def coarse_category(component_type: str | None) -> str | None:
 # "pressure_differential_indicator" resolutions, invisible to the old map).
 # Pattern-matched rather than an explicit lookup table so it doesn't drift out
 # of sync as TAG_PREFIX_TYPES grows.
-_PROJECT_EQUIPMENT_TYPES = {"tank", "pump", "compressor", "heat_exchanger", "filter"}
+# "equipment" itself is included (not just the fine-grained subtypes) because
+# equipment_label_discovery.py's discovered candidates are typed directly as
+# the literal coarse name "equipment" -- it has no fine-grained subtype to
+# assign, since the whole point of that discovery mechanism is finding
+# symbols with no clean geometric signature to classify further. Real bug
+# found and fixed: without this, project_coarse_category("equipment") fell
+# through to the default "instrument" branch below, since "equipment" isn't
+# a "valve" substring match and wasn't in this set -- every equipment-label
+# discovery was silently miscounted as an instrument in category-coverage
+# scoring (measured: page 1 instrument count inflated 29 -> 32 by the very
+# candidates meant to fix the equipment gap, while equipment coverage never
+# moved at all).
+_PROJECT_EQUIPMENT_TYPES = {"equipment", "tank", "pump", "compressor", "heat_exchanger", "filter"}
 
 
 def project_coarse_category(component_type: str | None) -> str | None:

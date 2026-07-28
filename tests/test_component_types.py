@@ -71,6 +71,20 @@ def test_project_coarse_category_collapses_valve_and_equipment_variants():
     assert project_coarse_category("filter") == "equipment"
 
 
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_project_coarse_category_accepts_literal_equipment_identity_regression():
+    """Regression: equipment_label_discovery.py's candidates are typed
+    directly as the literal coarse name "equipment" (no fine-grained subtype
+    to assign). Without this, project_coarse_category("equipment") fell
+    through to the default "instrument" branch -- measured live: page 1
+    instrument count inflated 29 -> 32 by the very candidates meant to fix
+    the equipment gap, while equipment coverage never moved."""
+    assert project_coarse_category("equipment") == "equipment"
+
+
 @pytest.mark.unit
 @pytest.mark.edge_case
 @pytest.mark.authored_claude_sonnet
