@@ -570,14 +570,31 @@ Each fix has a regression test verified via `git stash` to fail on the
 pre-fix code, not just a forward-looking assertion. Full chain: 144 tests
 passing.
 
-**Real, run-it-yourself result (all three fixes applied):**
+**Real, run-it-yourself result (page 0, all three fixes applied):**
 
-*Final confirmation run in progress as of this writing — see git log for the
-actual numbers once landed (`python evaluation/score_cv_accuracy.py --page 0
---use-yolo --llm-ocr-assist` / same for `--page 1
---ground-truth evaluation/ground_truth_page1.json`). Not backfilling a
-number here ahead of actually running it — that's the exact discipline this
-whole section is about.*
+| Category | Ground truth | Detected | Coverage |
+| --- | --- | --- | --- |
+| Instrument | 6 | 7 | 100.0% |
+| Valve | 29 | 36 | 100.0% |
+| Equipment | 2 | 2 | 100.0% |
+
+All three categories now land exactly on (or, for instrument/valve, above —
+the same known raw-count over-detection this README already discloses
+elsewhere) the deterministic no-assist baseline. Equipment's 0/2 →
+0/2 → 2/2 journey across the three bugs above is the clearest single proof
+this chain of fixes actually worked, not just moved the bug around.
+
+**Tag accuracy (page 0, unchanged by any of the three fixes above — this was
+never a component_type bug):** precision 0.462, recall 0.162, F1 0.24. 6 of
+37 real tags read correctly (`DPI 715A/B`, `PI 715A/B`, `PSV 715A/B` — every
+one of them a small, isolated instrument-bubble crop). 7 false positives are
+real misreads of ambiguous valve-tag crops, not fabricated. 31 false
+negatives — the vast majority of real valve tags on this page are still
+unread; small, densely-packed valve labels remain the harder crop for this
+model than isolated instrument bubbles.
+
+Page 1's first-ever real run with all three fixes is in progress as of this
+writing — not backfilling that number here ahead of it actually finishing.
 
 ### Datasets pulled for future symbol-detection work (not part of this submission)
 
