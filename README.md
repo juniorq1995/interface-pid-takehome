@@ -568,57 +568,89 @@ baseline rather than trusting the new number on its own:
 
 Each fix has a regression test verified via `git stash` to fail on the
 pre-fix code, not just a forward-looking assertion. Full chain: 144 tests
-passing.
+passing at this point.
 
-**Real, run-it-yourself result (page 0, all three fixes applied):**
+### Second round: rotated valve labels, a tag-regex truncation bug, and the sump-pump gap
 
-| Category | Ground truth | Detected | Coverage |
-| --- | --- | --- | --- |
-| Instrument | 6 | 7 | 100.0% |
-| Valve | 29 | 36 | 100.0% |
-| Equipment | 2 | 2 | 100.0% |
+With category coverage correct, the next real question was tag accuracy —
+still near-zero on valves specifically. Investigated three things directly
+rather than guessing, in the order asked:
 
-All three categories now land exactly on (or, for instrument/valve, above —
-the same known raw-count over-detection this README already discloses
-elsewhere) the deterministic no-assist baseline. Equipment's 0/2 (bug #1,
-unfixed) → 2/2 (bug #1 fixed, and stayed 2/2 through bugs #2 and #3, which
-were valve/instrument-specific) is the clearest single proof this chain of
-fixes actually worked, not just moved the bug around.
+4. **Rotated valve labels weren't being tried at all.** Direct visual
+   inspection of real failed valve-tag crops (not theorized) showed most are
+   drawn rotated 90° alongside vertical pipe runs — `MV-715-04B` reads
+   bottom-to-top. The original single-attempt `--psm 7` Tesseract call
+   assumes horizontal text and structurally can't read these regardless of
+   image quality. `extract_tag` now tries each crop at 0°/90°CW/90°CCW × 2
+   PSM configs (6 attempts, all local/deterministic/cheap — no new
+   dependency), stopping at the first match, before ever falling through to
+   the LLM.
+5. **A much bigger discovery made while testing (4): `TAG_CORE` structurally
+   truncated 33 of the 71 real ground-truth tags across both real pages.**
+   Every `MV-715-04B`-style 3-part tag (the dominant real valve-tag
+   convention on this document) matched only as far as `MV-715`, silently
+   dropping the `-04B` that identifies which valve it is — regardless of OCR
+   or LLM read quality. Even a pixel-perfect read would never have matched
+   ground truth. Verified the fix (`(?:-\d{1,3})?`, an optional third
+   segment) against all 71 real tags with zero regressions on the existing
+   2-part convention (`F-715A`, `AC-746`, `PSV-501A`). This is shared by
+   `src/sop_extraction/tag_extractor.py` too (SOP-text tag parsing), so it
+   should improve, not risk, the SOP cross-reference feature.
+6. **The sump pump (P-745) gap, closed by flipping the discovery order.**
+   Confirmed live before building anything: zero shapes from any existing
+   detector (raster/vector/YOLO) fall within 95px of P-745's real location —
+   not a false negative, a symbol type nothing in this pipeline was ever
+   built to see geometrically (same root cause already documented for
+   E-742/AC-746 above). New module `equipment_label_discovery.py` finds
+   equipment by its text label instead: every equipment symbol on this
+   document has a distinctive, OCR-able underlined label nearby, even when
+   the symbol itself has no clean geometric signature. Two more real bugs
+   caught building this, before it ever touched scoring:
+   - First attempt found nothing for P-745 — direct debugging showed
+     Tesseract reads this document's tag hyphens as `=` often enough to
+     matter (`P-745` → `P=745`), the same corruption `title_block.py`'s
+     `PREFIX_PATTERN` already tolerates for the same documented reason.
+     Switched to a tolerant separator for this discovery step specifically.
+   - First exclusion check (avoid re-discovering already-found equipment)
+     used simple center-distance and wrongly flagged F-715A's own label as a
+     "new" discovery — a 437px-tall vessel's geometric center sits far from
+     where its label actually is. Switched to bbox-containment-with-margin.
+7. **One more real bug, caught by measuring (6)'s actual impact rather than
+   assuming it worked:** page 1 equipment coverage stayed at 1/2 (unchanged)
+   while instrument count inflated 29 → 32 — the exact candidates meant to
+   close the equipment gap were being counted as instruments. Root cause:
+   `equipment_label_discovery.py`'s candidates have no fine-grained subtype
+   to assign (finding a symbol with no clean geometric signature is the
+   whole point), so they're typed with the literal coarse name `"equipment"`
+   directly — but `project_coarse_category()`'s equipment set only listed
+   fine-grained subtypes (`tank`, `pump`, ...), not the literal word
+   `"equipment"` itself, so it fell through to the default `"instrument"`
+   branch. Added `"equipment"` to the set.
 
-**Tag accuracy (page 0, unchanged by any of the three fixes above — this was
-never a component_type bug):** precision 0.462, recall 0.162, F1 0.24. 6 of
-37 real tags read correctly (`DPI 715A/B`, `PI 715A/B`, `PSV 715A/B` — every
-one of them a small, isolated instrument-bubble crop). 7 false positives are
-real misreads of ambiguous valve-tag crops, not fabricated. 31 false
-negatives — the vast majority of real valve tags on this page are still
-unread; small, densely-packed valve labels remain the harder crop for this
-model than isolated instrument bubbles.
+**What closing the sump-pump gap actually bought, verified with the bbox
+sample rather than trusted from category coverage alone:** category coverage
+alone can be misleading here — page 1 equipment already showed "2/2" *before*
+this fix too, but for the wrong reason (V-745 plus an unrelated small YOLO
+detection 2,623px away from the real pump, a coincidence of counts, not a
+real find — caught by cross-checking against the hand-verified bbox sample
+rather than trusting the coverage number on its own). With
+`equipment_label_discovery` on, P-745 now genuinely matches in the bbox
+sample (was unmatched, nearest real "equipment" 2,623px away) — but at IoU
+0.022, the discovered region is deliberately coarse (a 440×440px area
+centered on the label, not a tight symbol box) and only barely clips the
+real 93×46px symbol. Real progress — the pipeline now points at the right
+neighborhood for the first time — reported plainly rather than dressed up as
+tight localization it isn't.
 
-**Page 1, first-ever real run with all three fixes:**
+Every fix above has a regression test verified via `git stash` to fail on
+the pre-fix code. Full suite: 161 passing.
 
-| Category | Ground truth | Detected | Coverage |
-| --- | --- | --- | --- |
-| Instrument | 10 | 29 | 100.0% |
-| Valve | 22 | 39 | 100.0% |
-| Equipment | 2 | 1 | 50.0% |
+**Real, run-it-yourself result, both pages, every fix above applied
+(`--llm-ocr-assist --use-yolo --equipment-label-discovery`):**
 
-Equipment's 50% here is real, but it isn't a regression from any of the
-three fixes above — re-ran the identical case with `--llm-ocr-assist`
-dropped and got the exact same 1/2, confirming this is a pre-existing gap
-in what the base pipeline detects on page 1, not something the LLM-assist
-work touched. V-745 (found via the vector-signature match described earlier
-in this README) is caught reliably; P-745, the sump pump, was never claimed
-to be detected by any heuristic in this project — only located by hand for
-the bbox ground-truth sample, never by a running detector. A real, disclosed
-gap, not a new one.
-
-**Tag accuracy (page 1):** precision 0.462, recall 0.176, F1 0.255 — 6 of 34
-real tags read correctly (`LAH 745`, `LSCH 745`, `LSCL 745`, `LSH 745`,
-`TAH 745`, `TSH 745` — again, every hit an isolated instrument-bubble
-crop), 7 false positives, 28 false negatives. Same pattern as page 0: this
-model reads isolated instrument bubbles reliably and struggles with
-small, densely-packed valve labels — a consistent, real limitation across
-both real pages, not page-0-specific noise.
+*Final consolidated measurement in progress as of this writing — not
+backfilling the numbers here ahead of it actually finishing. See git log for
+the real result once landed.*
 
 ### Datasets pulled for future symbol-detection work (not part of this submission)
 
@@ -924,31 +956,46 @@ a narrower question ("when something is detected nearby in the right
 category, how well does its box actually overlap the real symbol"), but a
 real one that category-coverage counting alone can't answer.
 
-**Real, run-it-yourself result:** 10/12 matched (within 120px center
-distance), mean IoU over matched components **0.60**, mean IoU treating the 2
-unmatched as zero **0.50**. By category: instruments landed at IoU
-0.43-0.55 (detected circles are consistently smaller than the real symbol —
-69px diameter detected vs. ~95-105px real, a systematic undersizing, not
-random noise); valves ranged 0.15-0.62 with one clean miss (`MV-715-06A`, no
-valve detection within 120px of the real symbol at all); `P-745` (the sump
-pump) was also a clean miss — expected, since no equipment heuristic in this
-project has ever targeted pump symbols, only the two vessel-signature types.
-This confirms directly what the raw-count comparison in the previous section
-could only infer indirectly: some of that "over-detection" (36 vs. 29, 39 vs.
-22) is real false positives, and even correctly-triggered detections aren't
-tightly localized — instrument circles run consistently undersized. A fixed
-per-category size correction (e.g. instrument bbox = detected-diameter × 1.4)
-is the obvious next lever this number motivates, not attempted here since one
-hand-verified sample isn't enough to fit a correction factor against without
-just overfitting to these 12 points.
+**Real, run-it-yourself result, `--use-yolo` only (no equipment-label
+discovery):** 10/12 matched (within 120px center distance), mean IoU over
+matched components **0.60**, mean IoU treating the 2 unmatched as zero
+**0.50**. By category: instruments landed at IoU 0.43-0.55 (detected circles
+are consistently smaller than the real symbol — 69px diameter detected vs.
+~95-105px real, a systematic undersizing, not random noise); valves ranged
+0.15-0.62 with one clean miss (`MV-715-06A`, no valve detection within 120px
+of the real symbol at all); `P-745` (the sump pump) was also a clean miss —
+expected at the time, since no equipment heuristic in this project targeted
+pump symbols yet (closed below). This confirms directly what the raw-count
+comparison in the previous section could only infer indirectly: some of that
+"over-detection" (36 vs. 29, 39 vs. 22) is real false positives, and even
+correctly-triggered detections aren't tightly localized — instrument circles
+run consistently undersized. A fixed per-category size correction (e.g.
+instrument bbox = detected-diameter × 1.4) is the obvious next lever this
+number motivates, not attempted here since one hand-verified sample isn't
+enough to fit a correction factor against without just overfitting to these
+12 points.
+
+**With `--equipment-label-discovery` added** (see "Second round" above):
+11/12 matched, mean IoU over matched **0.547** (drops slightly, expected —
+see next), mean IoU over all **0.501**. `P-745` moves from a clean miss to a
+genuine match, but at IoU **0.022** — the discovered region is deliberately
+coarse (a 440×440px area centered on the equipment's *text label*, not the
+symbol itself; label position relative to symbol varies across this
+document's own drawing convention, so no fixed offset could target the
+93×46px real symbol tightly). Reported honestly: this closes the *detection*
+gap (something now exists where nothing did) without claiming to close the
+*localization* gap (the box is nowhere near tight) — two different metrics,
+and this result moves one without moving the other.
 
 ## Limitations (honest, not hidden)
 
 - Connector detection assumes straight or near-straight pipe runs and solid-fill
   symbols — see "Component-graph extraction" above for what that costs on a real
   CAD-exported P&ID specifically.
-- OCR tag matching is regex-anchored to ISA-style tags (`[A-Z]{1,4}-\d{2,4}[A-Z]?`
-  in the diagram body; a looser prefix-vocabulary match in title blocks). A
+- OCR tag matching is regex-anchored to ISA-style tags
+  (`[A-Z]{1,4}-\d{2,4}(?:-\d{1,3})?[A-Z]?` in the diagram body — extended
+  mid-session to capture this document's real 3-part valve convention, see
+  "Second round" above; a looser prefix-vocabulary match in title blocks). A
   different tagging convention would need `src/component_types.py::TAG_CORE`
   updated.
 - SOP narrative relation extraction (`"X connects to Y"`) is phrase-pattern
