@@ -580,9 +580,10 @@ passing.
 
 All three categories now land exactly on (or, for instrument/valve, above —
 the same known raw-count over-detection this README already discloses
-elsewhere) the deterministic no-assist baseline. Equipment's 0/2 →
-0/2 → 2/2 journey across the three bugs above is the clearest single proof
-this chain of fixes actually worked, not just moved the bug around.
+elsewhere) the deterministic no-assist baseline. Equipment's 0/2 (bug #1,
+unfixed) → 2/2 (bug #1 fixed, and stayed 2/2 through bugs #2 and #3, which
+were valve/instrument-specific) is the clearest single proof this chain of
+fixes actually worked, not just moved the bug around.
 
 **Tag accuracy (page 0, unchanged by any of the three fixes above — this was
 never a component_type bug):** precision 0.462, recall 0.162, F1 0.24. 6 of
@@ -593,8 +594,31 @@ negatives — the vast majority of real valve tags on this page are still
 unread; small, densely-packed valve labels remain the harder crop for this
 model than isolated instrument bubbles.
 
-Page 1's first-ever real run with all three fixes is in progress as of this
-writing — not backfilling that number here ahead of it actually finishing.
+**Page 1, first-ever real run with all three fixes:**
+
+| Category | Ground truth | Detected | Coverage |
+| --- | --- | --- | --- |
+| Instrument | 10 | 29 | 100.0% |
+| Valve | 22 | 39 | 100.0% |
+| Equipment | 2 | 1 | 50.0% |
+
+Equipment's 50% here is real, but it isn't a regression from any of the
+three fixes above — re-ran the identical case with `--llm-ocr-assist`
+dropped and got the exact same 1/2, confirming this is a pre-existing gap
+in what the base pipeline detects on page 1, not something the LLM-assist
+work touched. V-745 (found via the vector-signature match described earlier
+in this README) is caught reliably; P-745, the sump pump, was never claimed
+to be detected by any heuristic in this project — only located by hand for
+the bbox ground-truth sample, never by a running detector. A real, disclosed
+gap, not a new one.
+
+**Tag accuracy (page 1):** precision 0.462, recall 0.176, F1 0.255 — 6 of 34
+real tags read correctly (`LAH 745`, `LSCH 745`, `LSCL 745`, `LSH 745`,
+`TAH 745`, `TSH 745` — again, every hit an isolated instrument-bubble
+crop), 7 false positives, 28 false negatives. Same pattern as page 0: this
+model reads isolated instrument bubbles reliably and struggles with
+small, densely-packed valve labels — a consistent, real limitation across
+both real pages, not page-0-specific noise.
 
 ### Datasets pulled for future symbol-detection work (not part of this submission)
 
