@@ -10,6 +10,7 @@ from src.pid_extraction.connector_detection import (
     detect_connections,
     detect_connections_from_vector_segments,
 )
+from src.pid_extraction.equipment_label_discovery import find_equipment_label_candidates
 from src.pid_extraction.graph_builder import build_graph
 from src.pid_extraction.llm_ocr_assist import read_tag_with_llm
 from src.pid_extraction.ocr_tagging import extract_tag
@@ -76,6 +77,7 @@ def _merge_shapes(raster_shapes, *vector_shape_lists, yolo_shapes=()):
 def _extract_page_graph(
     image, pdf_path: str | Path | None = None, page_index: int = 0, dpi: int = 200, llm_ocr_assist: bool = False,
     use_yolo: bool = False, yolo_weights_path: Path | None = None, symbol_type_assist: bool = False,
+    equipment_label_discovery: bool = False,
 ) -> nx.Graph:
     raster_shapes = detect_shapes(image)
     circle_shapes = extract_circle_symbols(pdf_path, page_index, dpi) if pdf_path is not None else []
@@ -97,6 +99,20 @@ def _extract_page_graph(
     shapes, component_type_overrides = _merge_shapes(
         raster_shapes, circle_shapes, valve_shapes, vessel_shapes, yolo_shapes=yolo_shapes
     )
+
+    if equipment_label_discovery:
+        # Real gap this closes: compound equipment symbols (pumps, exchangers,
+        # coolers) have no clean geometric signature -- confirmed live that
+        # zero shapes from any detector above fall within 95px of the real
+        # P-745 pump. Finds them by label text instead (see
+        # equipment_label_discovery.py). Checked only against vessel_shapes
+        # (the vector-signature equipment already found), not the full merged
+        # list -- valves/instruments legitimately cluster next to equipment
+        # and must not suppress a real discovery.
+        label_candidates = find_equipment_label_candidates(image, vessel_shapes, start_shape_id=len(shapes))
+        for candidate in label_candidates:
+            component_type_overrides[candidate.shape_id] = "equipment"
+        shapes = shapes + label_candidates
 
     tags = {shape.shape_id: extract_tag(image, shape) for shape in shapes}
 
@@ -151,19 +167,20 @@ def _extract_page_graph(
 
 def extract_pid_graph(
     pdf_path: str | Path, page: int = 0, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False,
-    yolo_weights_path: Path | None = None, symbol_type_assist: bool = False,
+    yolo_weights_path: Path | None = None, symbol_type_assist: bool = False, equipment_label_discovery: bool = False,
 ) -> nx.Graph:
     images = pdf_to_images(pdf_path, dpi=dpi)
     if page >= len(images):
         raise ValueError(f"Requested page {page}, PDF only has {len(images)} page(s)")
     return _extract_page_graph(
-        images[page], pdf_path, page, dpi, llm_ocr_assist, use_yolo, yolo_weights_path, symbol_type_assist
+        images[page], pdf_path, page, dpi, llm_ocr_assist, use_yolo, yolo_weights_path, symbol_type_assist,
+        equipment_label_discovery,
     )
 
 
 def extract_pid_graph_all_pages(
     pdf_path: str | Path, dpi: int = 200, llm_ocr_assist: bool = False, use_yolo: bool = False,
-    yolo_weights_path: Path | None = None, symbol_type_assist: bool = False,
+    yolo_weights_path: Path | None = None, symbol_type_assist: bool = False, equipment_label_discovery: bool = False,
 ) -> nx.Graph:
     """Multi-sheet P&ID sets (e.g. the real Interface assignment PDF) are processed
     page by page and merged — component tags are assumed unique across sheets, which
@@ -172,7 +189,8 @@ def extract_pid_graph_all_pages(
     combined = nx.Graph()
     for page_index, image in enumerate(images):
         page_graph = _extract_page_graph(
-            image, pdf_path, page_index, dpi, llm_ocr_assist, use_yolo, yolo_weights_path, symbol_type_assist
+            image, pdf_path, page_index, dpi, llm_ocr_assist, use_yolo, yolo_weights_path, symbol_type_assist,
+            equipment_label_discovery,
         )
         # Unresolved shapes are labeled "UNLABELED-{shape_id}", and shape_id restarts
         # at 0 on every page — without this, nx.compose silently merges same-labeled

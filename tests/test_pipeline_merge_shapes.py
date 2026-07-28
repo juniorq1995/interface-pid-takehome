@@ -250,3 +250,69 @@ def test_symbol_type_assist_also_skips_oversized_unknown_shapes_edge_case():
     mock_classify.assert_not_called()
     node_data = next(iter(graph.nodes(data=True)))[1]
     assert node_data["component_type"] == "unknown"
+
+
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+def test_equipment_label_discovery_adds_candidate_as_equipment_happy_path():
+    """A label-discovered candidate (e.g. the real P-745 pump gap -- no
+    detector produces any shape near it) is merged into the shape list and
+    typed as equipment directly, since the discovery mechanism only fires on
+    equipment-prefix tags to begin with."""
+    candidate = _shape("equipment_label_region")
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.find_equipment_label_candidates", return_value=[candidate]) as mock_find,
+    ):
+        graph = _extract_page_graph(np.zeros((10, 10, 3), dtype=np.uint8), equipment_label_discovery=True)
+
+    mock_find.assert_called_once()
+    node_data = next(iter(graph.nodes(data=True)))[1]
+    assert node_data["component_type"] == "equipment"
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_equipment_label_discovery_off_by_default_edge_case():
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.find_equipment_label_candidates") as mock_find,
+    ):
+        _extract_page_graph(np.zeros((10, 10, 3), dtype=np.uint8))
+
+    mock_find.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_equipment_label_discovery_checked_only_against_vessel_shapes_edge_case():
+    """find_equipment_label_candidates must be called with vessel_shapes
+    (the vector-signature equipment) for its exclusion check, not the full
+    merged shape list -- nearby valves/instruments must not suppress a real
+    discovery (this was the actual real bug caught while building this: a
+    naive exclusion check against the wrong shape set wrongly re-suppressed
+    or wrongly allowed candidates)."""
+    vessel = _shape("rectangle")
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_circle_symbols", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_valve_symbols", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_vessel_symbols", return_value=[vessel]),
+        patch("src.pid_extraction.pipeline.extract_line_segments", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=(None, "")),
+        patch("src.pid_extraction.pipeline.find_equipment_label_candidates", return_value=[]) as mock_find,
+    ):
+        _extract_page_graph(
+            np.zeros((10, 10, 3), dtype=np.uint8), pdf_path="fake.pdf", equipment_label_discovery=True,
+        )
+
+    call_kwargs = mock_find.call_args
+    passed_shapes = call_kwargs.args[1] if len(call_kwargs.args) > 1 else call_kwargs.kwargs.get("existing_equipment_shapes")
+    assert passed_shapes == [vessel]
