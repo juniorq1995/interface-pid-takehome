@@ -710,11 +710,24 @@ existed), not a fundamental OCR limitation. Full suite: 175 passing.
 `E-742` moved from false negative to true positive — direct confirmation of
 the diagnosis above, not a coincidental count (category coverage was already
 100% both before and after, same pattern already seen twice on pages 0/1).
-`AC-746` is still a false negative after this fix: unlike `E-742`, its label
-text doesn't even surface as a *wrong* tag in the false-positive list, which
-points to the OCR failing to produce any `TAG_PATTERN`-shaped read at all
-for that specific label crop, not a digit substitution — a different, still-open
-failure mode within the same digit-misread ceiling documented in Limitations.
+`AC-746` was still a false negative after this fix — but unlike `E-742`, its
+label text didn't even surface as a *wrong* tag in the false-positive list,
+which pointed away from digit substitution and toward the OCR failing to
+produce any `TAG_PATTERN`-shaped read at all. Checked directly rather than
+left as an open question: a live OCR dump of the exact crop found the real
+cause — `AC-746`'s hyphen reads as an em-dash (`AC—746`), a *third* distinct
+separator corruption (alongside the already-handled `=` and `/`) that none
+of the tolerant patterns covered. One-line fix in the same normalization
+spots (`equipment_label_discovery.py`, plus `title_block.py`'s
+`PREFIX_PATTERN`, which already documented sharing this exact tolerance).
+**Both equipment items on page 2 are now true positives:**
+
+| | Category coverage | Precision | Recall | F1 |
+|---|---|---|---|---|
+| Before | equipment 8/2 (100%) | 0.375 | 0.414 | 0.393 |
+| After | equipment 9/2 (100%) | 0.382 | 0.448 | 0.413 |
+
+Full suite: 177 passing.
 
 ### Datasets pulled for future symbol-detection work (not part of this submission)
 
