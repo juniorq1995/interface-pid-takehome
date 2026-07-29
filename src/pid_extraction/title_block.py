@@ -36,7 +36,10 @@ HEADER_HEIGHT_FRACTION = 0.16
 # the left/right border — excluding those margins keeps it out of the header crop.
 HEADER_MARGIN_FRACTION = 0.04
 
-PREFIX_PATTERN = re.compile(r"\b([A-Z]{1,3})[-=/]\d")
+# "—"/"–" (em/en dash) included alongside "=" and "/": Tesseract reads this
+# document's tag hyphens as any of these on different labels (confirmed live
+# for AC-746: "AC-746" -> "AC—746", em-dash, not a regular hyphen).
+PREFIX_PATTERN = re.compile(r"\b([A-Z]{1,3})[-=/—–]\d")
 PRESSURE_PATTERN = re.compile(
     r"(?:DESIGN|M\.?W\.?P\.?)[:\s]*[^0-9]{0,15}?(\d{2,4}(?:\.\d+)?)\s*PSIG", re.IGNORECASE
 )

@@ -57,6 +57,25 @@ def test_finds_pump_label_with_hyphen_read_as_equals_sign_regression(mock_ocr):
     assert len(candidates) == 1
 
 
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+@patch("src.pid_extraction.equipment_label_discovery.pytesseract.image_to_data")
+def test_finds_air_cooler_label_with_hyphen_read_as_em_dash_regression(mock_ocr):
+    """Regression for a second, distinct real corrupted-separator case found
+    diagnosing AC-746 specifically: Tesseract read this label's hyphen as an
+    em-dash ("AC—746"), not the "=" the P-745 regression above covers --
+    confirmed live via direct OCR on the real page-2 crop. AC-746 was a
+    silent, un-diagnosed false negative until this was found: it never even
+    produced a wrong tag, because no candidate region was ever created for
+    it at all."""
+    mock_ocr.return_value = _ocr_data([("AC—746", 1000, 2900, 60, 20)])
+    candidates = find_equipment_label_candidates(_image(), existing_equipment_shapes=[])
+
+    assert len(candidates) == 1
+
+
 @pytest.mark.unit
 @pytest.mark.edge_case
 @pytest.mark.authored_claude_sonnet
@@ -180,6 +199,21 @@ def test_find_tag_for_known_equipment_shape_normalizes_corrupted_separator_regre
     tag = find_tag_for_known_equipment_shape(_image(), _vessel_shape())
 
     assert tag == "F-715A"
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.happy_path
+@pytest.mark.authored_claude_sonnet
+@patch("src.pid_extraction.equipment_label_discovery.pytesseract.image_to_data")
+def test_find_tag_for_known_equipment_shape_normalizes_em_dash_regression(mock_ocr):
+    """Regression for AC-746's real corrupted-separator case: em-dash, not
+    "=". Same normalize-then-strict-match path as the "=" case above, a
+    distinct corruption confirmed live on the real document."""
+    mock_ocr.return_value = _ocr_data([("AC—746", 200, 200, 60, 20)])
+    tag = find_tag_for_known_equipment_shape(_image(), _vessel_shape())
+
+    assert tag == "AC-746"
 
 
 @pytest.mark.unit

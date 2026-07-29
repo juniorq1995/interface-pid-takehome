@@ -41,13 +41,16 @@ _EQUIPMENT_PREFIXES = {
 # Tolerant separator, not a literal hyphen: confirmed live that Tesseract
 # reads this document's tag hyphens as "=" often enough to matter (P-745 ->
 # "P=745" -- the exact reason a naive TAG_PATTERN search missed the real
-# pump label entirely on first attempt). Same tolerance title_block.py's
-# PREFIX_PATTERN already uses for the same documented reason. This is a
+# pump label entirely on first attempt). Also confirmed live for AC-746,
+# which reads as an em-dash ("AC—746") rather than "=" -- a second, distinct
+# corrupted-separator case, not a typo of the first. Same tolerance
+# title_block.py's PREFIX_PATTERN already uses for the same documented
+# reason. This is a
 # location-discovery pattern only -- looser than the real tag-accuracy
 # patterns on purpose, since the goal here is finding *where* to look, not
 # the exact tag text (that still goes through the stricter OCR/LLM tag
 # reading paths once a shape exists to attach a tag to).
-_TOLERANT_TAG_PATTERN = re.compile(r"\b([A-Z]{1,4})[-=/](\d{2,4})\b")
+_TOLERANT_TAG_PATTERN = re.compile(r"\b([A-Z]{1,4})[-=/—–](\d{2,4})\b")
 _REGION_HALF_WIDTH_PX = 220
 _REGION_HALF_HEIGHT_PX = 220
 # Checked as bbox-containment-with-margin against already-known *equipment*
@@ -143,9 +146,9 @@ def find_tag_for_known_equipment_shape(image: np.ndarray, shape: DetectedShape) 
     for its real tag text, returning the nearest valid match or None.
 
     Uses the real, strict TAG_PATTERN (not the tolerant discovery pattern
-    above) after normalizing known separator corruptions ("=" / "/" read in
-    place of "-") -- this needs to produce real tag text for tag-accuracy
-    scoring, not just a location to search."""
+    above) after normalizing known separator corruptions ("=" / "/" / em-dash
+    / en-dash read in place of "-") -- this needs to produce real tag text
+    for tag-accuracy scoring, not just a location to search."""
     x, y, w, h = shape.bbox
     cx, cy = x + w / 2.0, y + h / 2.0
     ih, iw = image.shape[:2]
@@ -165,7 +168,7 @@ def find_tag_for_known_equipment_shape(image: np.ndarray, shape: DetectedShape) 
         word = word.strip()
         if not word:
             continue
-        normalized = re.sub(r"[=/]", "-", word.upper())
+        normalized = re.sub(r"[=/—–]", "-", word.upper())
         match = TAG_PATTERN.search(normalized)
         if not match:
             continue
