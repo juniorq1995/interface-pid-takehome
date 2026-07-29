@@ -368,6 +368,37 @@ def test_anomalous_size_filter_exempts_equipment_edge_case():
     assert node_data["component_type"] == "tank"
 
 
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.failure_path
+@pytest.mark.authored_claude_sonnet
+def test_equipment_label_region_skips_narrow_extract_tag_regression():
+    """Regression for a real, confirmed-live bug found diagnosing page 2's
+    AC-746/E-742 false negatives: extract_tag's rotation+PSM binarized
+    single-tag pipeline is built for tight crops, not the large (440px)
+    multi-line context regions equipment_label_discovery produces -- on the
+    real document it confidently misread "E-742" as "E-42" (3 chars away
+    from correct). Because extract_tag returns *something* non-None, that
+    wrong tag silently won over the correct wide-crop word search below
+    (which only runs when the tag is still None). equipment_label_region
+    candidates must skip extract_tag entirely so the wide-crop search always
+    gets the chance to run."""
+    candidate = _large_shape("equipment_label_region", w=440, h=440)  # real discovery-candidate scale
+
+    with (
+        patch("src.pid_extraction.pipeline.detect_shapes", return_value=[]),
+        patch("src.pid_extraction.pipeline.extract_tag", return_value=("E-42", "E-42")) as mock_extract_tag,
+        patch("src.pid_extraction.pipeline.find_equipment_label_candidates", return_value=[candidate]),
+        patch("src.pid_extraction.pipeline.find_tag_for_known_equipment_shape", return_value="E-742") as mock_find_tag,
+    ):
+        graph = _extract_page_graph(np.zeros((10, 10, 3), dtype=np.uint8), equipment_label_discovery=True)
+
+    mock_extract_tag.assert_not_called()
+    mock_find_tag.assert_called_once()
+    node_data = next(iter(graph.nodes(data=True)))[1]
+    assert node_data["tag"] == "E-742"
+
+
 @pytest.mark.unit
 @pytest.mark.happy_path
 @pytest.mark.authored_claude_sonnet

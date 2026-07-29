@@ -648,9 +648,73 @@ the pre-fix code. Full suite: 161 passing.
 **Real, run-it-yourself result, both pages, every fix above applied
 (`--llm-ocr-assist --use-yolo --equipment-label-discovery`):**
 
-*Final consolidated measurement in progress as of this writing — not
-backfilling the numbers here ahead of it actually finishing. See git log for
-the real result once landed.*
+| Page | Category coverage | Tag precision | Tag recall | Tag F1 |
+|---|---|---|---|---|
+| 0 | instrument 6/6, valve 32/29, equipment 3/2 (all 100%) | 0.567 | 0.459 | 0.507 |
+| 1 | equipment 7/2, valve 32/22, instrument 28/10 (all 100%) | 0.483 | 0.412 | 0.444 |
+
+`F-715A` is a true positive for the first time in this run — direct
+confirmation the `equipment_label_discovery` fix above closes a real gap, not
+just a coverage-count coincidence (the same distinction the P-745 bbox check
+above exists to make). Both pages' false-positive lists are dominated by the
+digit-mangling failure mode documented in Limitations below
+(`MV-745-0`, `MV-715-08`, `PI 715-10A` — a truncated or corrupted last
+segment, not a wrong-symbol read), not by wrong-location or wrong-category
+errors — category coverage is 100% on every category, both pages.
+
+### Third round: page 2's first-ever measurement, and a self-inflicted digit misread
+
+Page 2 had never been measured at all before this round — built its ground
+truth (29 hand-verified components, `evaluation/ground_truth_page2.json`)
+and ran it for the first time, expecting the same fixes to transfer. They
+mostly did (100% category coverage on every category, same as pages 0/1),
+but tag accuracy landed meaningfully lower — confirmed by direct diagnosis,
+not assumption, that this wasn't the same failure mode as anything fixed so
+far:
+
+8. **`extract_tag`'s narrow crop lost to its own wide-crop fallback,
+   silently.** `AC-746`/`E-742` kept coming back wrong (`E-745`, `E-735`,
+   `E-42` across different passes) even though
+   `find_equipment_label_candidates` was correctly finding their real
+   location every time — checked live, 4/4 candidates land in the right
+   neighborhood. Root cause, found by running `extract_tag` and
+   `find_tag_for_known_equipment_shape` on the *identical* real crop side by
+   side: `extract_tag`'s rotation+PSM+binarize pipeline (built for tight
+   single-tag crops) confidently misread the region as `E-42`, while the
+   plain deterministic word-search already sitting in
+   `find_tag_for_known_equipment_shape` read the same pixels correctly as
+   `E-742`. The bug was pure precedence — `extract_tag` runs first for every
+   shape, and because it returned *something* non-`None`, the correct search
+   right next to it in the same file never got the chance to run (that
+   fallback only fires when the tag is still unresolved). Fixed by having
+   `equipment_label_region` candidates skip `extract_tag` entirely, since
+   they're deliberately large multi-line context crops by construction, not
+   the small tight crops `extract_tag` is built for. Verified via `git
+   stash`: the regression test fails pre-fix with the wrong tag winning,
+   confirmed via `find_tag_for_known_equipment_shape` never even getting
+   called.
+
+This is a different, narrower bug than the digit-level OCR-engine ceiling
+discussed in Limitations below — this one was a real, fixable mistake in
+*this* pipeline's own logic (a worse read beating a better one that already
+existed), not a fundamental OCR limitation. Full suite: 175 passing.
+
+**Page 2, before vs. after this fix, real numbers, same
+`--llm-ocr-assist --use-yolo --equipment-label-discovery` flags:**
+
+| | Category coverage | Precision | Recall | F1 |
+|---|---|---|---|---|
+| Before | equipment 8/2, valve 28/15, instrument 25/12 (all 100%) | 0.344 | 0.379 | 0.361 |
+| After | equipment 8/2, valve 28/15, instrument 25/12 (all 100%) | 0.375 | 0.414 | 0.393 |
+
+`E-742` moved from false negative to true positive — direct confirmation of
+the diagnosis above, not a coincidental count (category coverage was already
+100% both before and after, same pattern already seen twice on pages 0/1).
+`AC-746` is still a false negative after this fix: unlike `E-742`, its label
+text doesn't even surface as a *wrong* tag in the false-positive list, which
+points to the OCR failing to produce any `TAG_PATTERN`-shaped read at all
+for that specific label crop, not a digit substitution — a different, still-open
+failure mode within the same digit-misread ceiling documented in Limitations.
 
 ### Datasets pulled for future symbol-detection work (not part of this submission)
 
@@ -1004,6 +1068,42 @@ and this result moves one without moving the other.
 - Title-block temperature parsing is lower-confidence than pressure (see
   `DESIGN_LIMIT_MISMATCH` severity split) — OCR corrupts punctuation inside the
   temperature clause more than the pressure clause on this drawing.
+- **Digit-level OCR misread is a real, residual ceiling this session couldn't
+  fully close, and I checked rather than assumed that.** After the fixes
+  above, page 2 specifically still misreads some equipment/valve tag digits
+  (e.g. a `-742` label read as `-745`/`-735`/`-42` in different passes) —
+  confirmed by direct crop-level testing that these are genuine character
+  misreads on legible, correctly-*located* text, not a discovery-location
+  problem (`find_equipment_label_candidates` finds the right neighborhood
+  every time). One real, fixable instance of this *was* closed this session
+  (see "Third round" below — `extract_tag`'s narrow binarized crop was
+  producing a worse read than the wider deterministic search already sitting
+  next to it in the same file). What's left after that fix is genuine
+  small-glyph digit ambiguity in dense, cluttered regions.
+  Researched rather than assumed whether an existing open-source tool or
+  published method already solves this without new labeled data: fine-tuned
+  digit-specific CRNN models substantially outperform generic pretrained OCR
+  on numeral accuracy (one cited benchmark: 96% vs. 2.35% for stock EasyOCR
+  on the same digit task) — [ML Journey's TrOCR/PaddleOCR/EasyOCR
+  comparison](https://mljourney.com/optical-character-recognition-trocr-vs-paddleocr-vs-easyocr/),
+  [IntuitionLabs' OCR engine
+  analysis](https://intuitionlabs.ai/articles/non-llm-ocr-technologies) — but
+  "fine-tuned" is exactly the new-labeled-data requirement in question, not
+  an escape from it. Recent academic work on this *exact* problem domain
+  (P&ID/engineering-drawing digitization) confirms the same conclusion from
+  the other direction: [SynthPID](https://arxiv.org/pdf/2604.16513),
+  [Enginuity](https://arxiv.org/pdf/2601.13299), and
+  [BLUEPRINT](https://arxiv.org/pdf/2602.13345) all build large
+  synthetic/annotated training sets specifically because generic pretrained
+  OCR isn't sufficient on this class of document — that's the field's answer,
+  not a gap in my search. One real, data-free lever I found but didn't have
+  time to build: a [bridge-engineering-drawing OCR
+  study](https://www.sciencedirect.com/science/article/pii/S2590123026012211)
+  uses lightweight post-recognition structured correction (vocabulary/
+  edit-distance voting against the set of tags already read with high
+  confidence elsewhere in the same document) rather than a better OCR engine
+  — plausible here too, since tag numbers repeat across sheets, but untested
+  and left as a documented follow-on rather than claimed as done.
 
 ## Bonus not attempted (time-boxed)
 

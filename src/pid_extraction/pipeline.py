@@ -144,7 +144,20 @@ def _extract_page_graph(
             component_type_overrides[candidate.shape_id] = "equipment"
         shapes = shapes + label_candidates
 
-    tags = {shape.shape_id: extract_tag(image, shape) for shape in shapes}
+    # equipment_label_region candidates are deliberately large (440px)
+    # multi-line context crops, not tight single-tag crops -- extract_tag's
+    # rotation+PSM+binarize pipeline is built for the latter and produces
+    # confident-looking wrong digit reads on the former (confirmed live:
+    # binarized read "E-42" on a region where the real tag is "E-742", 3
+    # chars away from a match a human would catch instantly). Because
+    # extract_tag returns *something* non-None, it silently wins over the
+    # correct wide-crop word search below (equipment_label_discovery loop
+    # only runs when tags[...] is still None) -- so these shapes skip
+    # extract_tag entirely and go straight to that search.
+    tags = {
+        shape.shape_id: (extract_tag(image, shape) if shape.kind != "equipment_label_region" else (None, None))
+        for shape in shapes
+    }
 
     tag_sources: dict[int, str] = {}
 
