@@ -22,8 +22,12 @@ class EquipmentLimit:
 
 
 def _to_float(text: str) -> float | None:
+    # Strip thousands separators ("1,275" -> "1275") before parsing -- without
+    # this, a comma-formatted pressure value silently became None (extraction
+    # failure indistinguishable from a genuinely blank cell) rather than the
+    # real number the table actually states.
     try:
-        return float(text.strip())
+        return float(text.strip().replace(",", ""))
     except ValueError:
         return None
 

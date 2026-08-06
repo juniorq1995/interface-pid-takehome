@@ -40,6 +40,7 @@ import fitz
 import numpy as np
 
 from src.pid_extraction.shape_detection import DetectedShape
+from src.pid_extraction.vector_lines import _to_pixel
 
 _ISOLATED_MIN_SIDE_PT, _ISOLATED_MAX_SIDE_PT = 9.0, 14.0
 _ISOLATED_MIN_ASPECT, _ISOLATED_MAX_ASPECT = 0.7, 1.4
@@ -88,7 +89,6 @@ def extract_valve_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int = 
             raise ValueError(f"Requested page {page_index}, PDF only has {doc.page_count} page(s)")
         page = doc[page_index]
         rotation_matrix = page.rotation_matrix
-        scale = dpi / 72
 
         shapes = []
         for d in page.get_drawings():
@@ -98,9 +98,12 @@ def extract_valve_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int = 
                 continue
 
             r = d["rect"]
-            corners = [fitz.Point(r.x0, r.y0) * rotation_matrix, fitz.Point(r.x1, r.y1) * rotation_matrix]
-            xs = [p.x * scale for p in corners]
-            ys = [p.y * scale for p in corners]
+            corners = [
+                _to_pixel(fitz.Point(r.x0, r.y0), rotation_matrix, dpi),
+                _to_pixel(fitz.Point(r.x1, r.y1), rotation_matrix, dpi),
+            ]
+            xs = [p[0] for p in corners]
+            ys = [p[1] for p in corners]
             x0, x1 = sorted(xs)
             y0, y1 = sorted(ys)
             bbox = (int(x0), int(y0), int(x1 - x0), int(y1 - y0))

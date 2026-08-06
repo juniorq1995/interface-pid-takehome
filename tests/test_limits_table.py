@@ -48,3 +48,19 @@ def test_extract_equipment_limits_skips_table_without_pressure_or_temp_columns_e
 def test_extract_equipment_limits_empty_input_edge_case():
     assert extract_equipment_limits([]) == {}
     assert extract_equipment_limits([[]]) == {}
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_extract_equipment_limits_thousands_separator_regression():
+    """Real bug: a comma-formatted pressure value ("1,275") raised ValueError
+    inside _to_float and silently became None -- indistinguishable from a
+    genuinely blank cell -- instead of the real number the table states."""
+    table = [
+        ["", "Pressure (psig)", "Temperature (°F)"],
+        ["V-745 Stabilizer Tower", "1,275", "100"],
+    ]
+    limits = extract_equipment_limits([table])
+    assert limits["V-745"][0].pressure_psig == 1275.0

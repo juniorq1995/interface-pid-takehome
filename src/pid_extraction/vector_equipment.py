@@ -82,6 +82,7 @@ import fitz
 import numpy as np
 
 from src.pid_extraction.shape_detection import DetectedShape
+from src.pid_extraction.vector_lines import _to_pixel
 
 MIN_ITEMS, MAX_ITEMS = 60, 90
 MIN_WIDTH_PT, MAX_WIDTH_PT = 80.0, 130.0
@@ -117,7 +118,6 @@ def extract_vessel_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int =
             raise ValueError(f"Requested page {page_index}, PDF only has {doc.page_count} page(s)")
         page = doc[page_index]
         rotation_matrix = page.rotation_matrix
-        scale = dpi / 72
 
         shapes = []
         for d in page.get_drawings():
@@ -133,9 +133,12 @@ def extract_vessel_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int =
             if not _matches_any_vessel_signature(len(d["items"]), r.width, r.height):
                 continue
 
-            corners = [fitz.Point(r.x0, r.y0) * rotation_matrix, fitz.Point(r.x1, r.y1) * rotation_matrix]
-            xs = [p.x * scale for p in corners]
-            ys = [p.y * scale for p in corners]
+            corners = [
+                _to_pixel(fitz.Point(r.x0, r.y0), rotation_matrix, dpi),
+                _to_pixel(fitz.Point(r.x1, r.y1), rotation_matrix, dpi),
+            ]
+            xs = [p[0] for p in corners]
+            ys = [p[1] for p in corners]
             x0, x1 = sorted(xs)
             y0, y1 = sorted(ys)
             bbox = (int(x0), int(y0), int(x1 - x0), int(y1 - y0))

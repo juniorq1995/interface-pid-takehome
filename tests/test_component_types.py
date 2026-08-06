@@ -41,6 +41,37 @@ def test_coarse_category_none_input_edge_case():
 
 @pytest.mark.regression
 @pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_coarse_category_covers_previously_unmapped_instrument_subtypes_regression():
+    """Regression: coarse_category() used to be a hardcoded dict covering only
+    11 of TAG_PREFIX_TYPES' ~44 values, identity-mapping everything else. A
+    correctly-resolved "pressure_indicator" or "level_switch_high" never
+    matched crossref/compare.py's SOP-declared "instrument", firing a
+    spurious TYPE_MISMATCH on a genuinely correct classification -- the same
+    bug class already found and fixed once for score_cv_accuracy.py's local
+    map (see project_coarse_category below), just missed here."""
+    assert coarse_category("pressure_indicator") == "instrument"
+    assert coarse_category("level_switch_high") == "instrument"
+    assert coarse_category("pressure_differential_indicator_transmitter") == "instrument"
+    assert coarse_category("hand_off_auto_switch") == "instrument"
+    assert coarse_category("emergency_shutdown_valve") == "valve"
+    assert coarse_category("pressure_control_valve") == "valve"
+    assert coarse_category("pump") == "pump"
+
+
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_coarse_category_unknown_stays_unknown_edge_case():
+    # "unknown" is preserved verbatim (not folded into the "instrument"
+    # catch-all) so an unclassified component reports as "classified as
+    # unknown" in TYPE_MISMATCH messages, not a misleading coarse bucket.
+    assert coarse_category("unknown") == "unknown"
+
+
+@pytest.mark.regression
+@pytest.mark.unit
 @pytest.mark.happy_path
 @pytest.mark.authored_claude_sonnet
 def test_project_coarse_category_collapses_fine_instrument_subtypes_to_instrument():

@@ -101,20 +101,6 @@ def type_from_tag(tag: str) -> str | None:
     return TAG_PREFIX_TYPES.get(prefix)
 
 
-COARSE_CATEGORY = {
-    "safety_valve": "valve",
-    "flow_transmitter": "instrument",
-    "pressure_transmitter": "instrument",
-    "temperature_transmitter": "instrument",
-    "level_transmitter": "instrument",
-    "instrument": "instrument",
-    "valve": "valve",
-    "pump": "pump",
-    "tank": "tank",
-    "compressor": "compressor",
-    "heat_exchanger": "heat_exchanger",
-}
-
 SOP_TYPE_KEYWORDS = {
     "valve": "valve",
     "pump": "pump",
@@ -128,9 +114,29 @@ SOP_TYPE_KEYWORDS = {
 
 
 def coarse_category(component_type: str | None) -> str | None:
+    """Collapse a fine-grained TAG_PREFIX_TYPES value to the 6-category vocabulary
+    crossref/compare.py's TYPE_MISMATCH check compares against SOP_TYPE_KEYWORDS'
+    declared_type values (valve/pump/tank/instrument/compressor/heat_exchanger).
+
+    Real bug found and fixed: this used to be a hardcoded dict covering only 11
+    of TAG_PREFIX_TYPES' ~44 values, falling back to identity for the rest --
+    a correctly-resolved "pressure_indicator" or "level_switch_high" never
+    matched an SOP-declared "instrument", firing a spurious TYPE_MISMATCH on a
+    genuinely correct classification. Pattern-matched instead, so it doesn't
+    drift out of sync as TAG_PREFIX_TYPES grows -- same lesson already learned
+    once for project_coarse_category() below (see its comment for the twin bug
+    that hit score_cv_accuracy.py's category-coverage table).
+    """
     if component_type is None:
         return None
-    return COARSE_CATEGORY.get(component_type, component_type)
+    if component_type == "unknown":
+        return "unknown"  # preserved verbatim: an unclassified component should
+        # report as "classified as unknown", not silently collapse into a bucket
+    if "valve" in component_type:
+        return "valve"
+    if component_type in ("pump", "tank", "compressor", "heat_exchanger"):
+        return component_type
+    return "instrument"
 
 
 # This document's own ground truth (evaluation/ground_truth_page*.json) uses

@@ -39,7 +39,7 @@ HEADER_MARGIN_FRACTION = 0.04
 # "—"/"–" (em/en dash) included alongside "=" and "/": Tesseract reads this
 # document's tag hyphens as any of these on different labels (confirmed live
 # for AC-746: "AC-746" -> "AC—746", em-dash, not a regular hyphen).
-PREFIX_PATTERN = re.compile(r"\b([A-Z]{1,3})[-=/—–]\d")
+PREFIX_PATTERN = re.compile(r"\b([A-Z]{1,4})[-=/—–]\d")  # {1,4} to match TAG_CORE's prefix width (component_types.py)
 PRESSURE_PATTERN = re.compile(
     r"(?:DESIGN|M\.?W\.?P\.?)[:\s]*[^0-9]{0,15}?(\d{2,4}(?:\.\d+)?)\s*PSIG", re.IGNORECASE
 )
@@ -76,23 +76,38 @@ def extract_title_block_limits(image: np.ndarray, known_tags: set[str] | None = 
     text = _ocr_header(image).upper()
 
     if known_tags:
-        known_prefixes = {tag.split("-")[0]: tag for tag in known_tags}
-        tag_hits = [(pos, known_prefixes[p]) for pos, p in _prefix_positions(text, set(known_prefixes))]
+        # Real bug found and fixed: a plain {prefix: tag} dict silently dropped
+        # every known tag but one whenever two known tags shared a prefix letter
+        # (e.g. two "MV-" equipment tags) -- that tag became permanently
+        # unmatchable via title-block OCR with no signal it happened. Grouping
+        # into a list means every tag sharing an ambiguous prefix now gets
+        # surfaced (with the same clause, since OCR genuinely can't tell them
+        # apart from a single header instance) instead of one winning silently.
+        known_prefixes: dict[str, list[str]] = {}
+        for tag in known_tags:
+            known_prefixes.setdefault(tag.split("-")[0], []).append(tag)
+        prefix_hits = _prefix_positions(text, set(known_prefixes))
     else:
         # No vocabulary supplied — best effort, strict prefix+digit pattern only.
-        tag_hits = [(m.start(), m.group(1)) for m in PREFIX_PATTERN.finditer(text)]
+        prefix_hits = [(m.start(), m.group(1)) for m in PREFIX_PATTERN.finditer(text)]
+        known_prefixes = {prefix: [prefix] for _, prefix in prefix_hits}
 
-    if not tag_hits:
+    if not prefix_hits:
         return {}
 
     pressures = [(m.start(), float(m.group(1))) for m in PRESSURE_PATTERN.finditer(text)]
     temperatures = [(m.start(), m.group(1)) for m in TEMPERATURE_PATTERN.finditer(text)]
 
     results = {}
-    for i, (_, tag) in enumerate(tag_hits):
-        pressure = pressures[i][1] if i < len(pressures) else (pressures[0][1] if pressures else None)
-        temperature = temperatures[i][1] if i < len(temperatures) else (temperatures[0][1] if temperatures else None)
-        results[tag] = {"design_pressure_psig": pressure, "design_temperature_f": temperature, "raw_header": text}
+    for i, (_, prefix) in enumerate(prefix_hits):
+        # Real bug found and fixed: falling back to pressures[0]/temperatures[0]
+        # when OCR found fewer clauses than tags silently misattributed one
+        # equipment's design limit to another instead of leaving it unresolved.
+        # None is the honest result when the clause count doesn't line up.
+        pressure = pressures[i][1] if i < len(pressures) else None
+        temperature = temperatures[i][1] if i < len(temperatures) else None
+        for tag in known_prefixes[prefix]:
+            results[tag] = {"design_pressure_psig": pressure, "design_temperature_f": temperature, "raw_header": text}
     return results
 
 

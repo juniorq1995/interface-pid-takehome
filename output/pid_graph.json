@@ -5,8 +5,8 @@
   "nodes": [
     {
       "shape_id": 0,
-      "tag": null,
-      "ocr_raw_text": "",
+      "tag": "V-715",
+      "ocr_raw_text": "1-D2S\n\nS\n\nV-715\n\n14A\n\n1-D2S",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -15,13 +15,13 @@
         46,
         46
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-0"
+      "tag_confidence": "ocr_matched",
+      "id": "V-715"
     },
     {
       "shape_id": 1,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "SZ\n\nO",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -35,8 +35,8 @@
     },
     {
       "shape_id": 2,
-      "tag": null,
-      "ocr_raw_text": "",
+      "tag": "MV-71",
+      "ocr_raw_text": "FA\n\n8I Q\n\n12-D2S\n\nMV-71 5098\n\nN",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -45,13 +45,13 @@
         46,
         46
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-2"
+      "tag_confidence": "ocr_matched",
+      "id": "MV-71"
     },
     {
       "shape_id": 3,
-      "tag": null,
-      "ocr_raw_text": "",
+      "tag": "MV-715-038",
+      "ocr_raw_text": "1-D2S\n\nMV-715-038",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -60,13 +60,13 @@
         46,
         46
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-3"
+      "tag_confidence": "ocr_matched",
+      "id": "MV-715-038"
     },
     {
       "shape_id": 4,
-      "tag": null,
-      "ocr_raw_text": "7",
+      "tag": "MV-71",
+      "ocr_raw_text": "12-\n\nMV-71",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -75,13 +75,13 @@
         46,
         46
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-4"
+      "tag_confidence": "ocr_matched",
+      "id": "MV-71 (dup 2)"
     },
     {
       "shape_id": 5,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "Q\n\nTT",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -95,8 +95,8 @@
     },
     {
       "shape_id": 6,
-      "tag": null,
-      "ocr_raw_text": "",
+      "tag": "V-715-10A",
+      "ocr_raw_text": "1-D2S\n\nV-715-10A\n\n27L0",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -105,13 +105,13 @@
         48,
         91
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-6"
+      "tag_confidence": "ocr_matched",
+      "id": "V-715-10A"
     },
     {
       "shape_id": 7,
       "tag": null,
-      "ocr_raw_text": "- 3",
+      "ocr_raw_text": "R",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -126,7 +126,7 @@
     {
       "shape_id": 8,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "4",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -141,7 +141,7 @@
     {
       "shape_id": 9,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "SS\n\n1-AW",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -156,7 +156,7 @@
     {
       "shape_id": 10,
       "tag": null,
-      "ocr_raw_text": "2",
+      "ocr_raw_text": "-S1",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -171,7 +171,7 @@
     {
       "shape_id": 11,
       "tag": null,
-      "ocr_raw_text": "TO S",
+      "ocr_raw_text": "O\n\nNO",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -184,39 +184,9 @@
       "id": "UNLABELED-P0-UNLABELED-11"
     },
     {
-      "shape_id": 12,
-      "tag": null,
-      "ocr_raw_text": "3",
-      "symbol_kind": "bowtie",
-      "component_type": "valve",
-      "bbox": [
-        1698,
-        832,
-        32,
-        330
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-12"
-    },
-    {
-      "shape_id": 13,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "bowtie",
-      "component_type": "valve",
-      "bbox": [
-        2345,
-        604,
-        58,
-        326
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-13"
-    },
-    {
       "shape_id": 14,
-      "tag": null,
-      "ocr_raw_text": "",
+      "tag": "MV-115",
+      "ocr_raw_text": "W\n\n1-02S\n\nMV-115",
       "symbol_kind": "rectangle",
       "component_type": "tank",
       "bbox": [
@@ -225,13 +195,13 @@
         67,
         291
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-14"
+      "tag_confidence": "ocr_matched",
+      "id": "MV-115"
     },
     {
       "shape_id": 15,
-      "tag": null,
-      "ocr_raw_text": "",
+      "tag": "MV-71",
+      "ocr_raw_text": "12\n\nMV-71\n\nIL\n\nIL\n\nV2\n\nMV-71\n\nNN\n\n-O\n\nO\n\nW\n\nAI",
       "symbol_kind": "rectangle",
       "component_type": "tank",
       "bbox": [
@@ -240,13 +210,13 @@
         69,
         291
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P0-UNLABELED-15"
+      "tag_confidence": "ocr_matched",
+      "id": "MV-71 (dup 3)"
     },
     {
       "shape_id": 16,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "C\n\nS2\n\nUJIA",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -261,7 +231,7 @@
     {
       "shape_id": 0,
       "tag": null,
-      "ocr_raw_text": "3",
+      "ocr_raw_text": "N",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -291,7 +261,7 @@
     {
       "shape_id": 2,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "BATWA-S\n\nG",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -306,7 +276,7 @@
     {
       "shape_id": 3,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "JAIWA-S",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -321,7 +291,7 @@
     {
       "shape_id": 4,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "1",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -351,52 +321,7 @@
     {
       "shape_id": 6,
       "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        2340,
-        562,
-        45,
-        45
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-6"
-    },
-    {
-      "shape_id": 7,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        1241,
-        683,
-        46,
-        45
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-7"
-    },
-    {
-      "shape_id": 8,
-      "tag": null,
-      "ocr_raw_text": "K-",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        1241,
-        934,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-8"
-    },
-    {
-      "shape_id": 9,
-      "tag": null,
-      "ocr_raw_text": "S E",
+      "ocr_raw_text": "P",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -406,27 +331,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-9"
+      "id": "UNLABELED-P1-UNLABELED-6"
     },
     {
-      "shape_id": 10,
+      "shape_id": 7,
       "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        2505,
-        694,
-        43,
-        51
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-10"
-    },
-    {
-      "shape_id": 11,
-      "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "O",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -436,17 +346,77 @@
         46
       ],
       "tag_confidence": "unresolved",
+      "id": "UNLABELED-P1-UNLABELED-7"
+    },
+    {
+      "shape_id": 8,
+      "tag": null,
+      "ocr_raw_text": "Y\n\nSCH",
+      "symbol_kind": "circle",
+      "component_type": "instrument",
+      "bbox": [
+        965,
+        1446,
+        46,
+        46
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P1-UNLABELED-8"
+    },
+    {
+      "shape_id": 9,
+      "tag": null,
+      "ocr_raw_text": "IES\n\nSV",
+      "symbol_kind": "circle",
+      "component_type": "instrument",
+      "bbox": [
+        965,
+        1546,
+        46,
+        46
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P1-UNLABELED-9"
+    },
+    {
+      "shape_id": 10,
+      "tag": null,
+      "ocr_raw_text": "IGE",
+      "symbol_kind": "circle",
+      "component_type": "instrument",
+      "bbox": [
+        897,
+        1548,
+        46,
+        46
+      ],
+      "tag_confidence": "unresolved",
+      "id": "UNLABELED-P1-UNLABELED-10"
+    },
+    {
+      "shape_id": 11,
+      "tag": null,
+      "ocr_raw_text": "N\n\nYR\n\nD\n\nSY",
+      "symbol_kind": "circle",
+      "component_type": "instrument",
+      "bbox": [
+        965,
+        1594,
+        46,
+        46
+      ],
+      "tag_confidence": "unresolved",
       "id": "UNLABELED-P1-UNLABELED-11"
     },
     {
       "shape_id": 12,
       "tag": null,
-      "ocr_raw_text": "E",
+      "ocr_raw_text": "ZIJ",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
-        966,
-        1446,
+        897,
+        1593,
         46,
         46
       ],
@@ -456,11 +426,11 @@
     {
       "shape_id": 13,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "AY",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
-        965,
+        897,
         1446,
         46,
         46
@@ -471,12 +441,12 @@
     {
       "shape_id": 14,
       "tag": null,
-      "ocr_raw_text": "4",
+      "ocr_raw_text": "DEBE\n\nVON",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
-        966,
-        1548,
+        965,
+        1501,
         46,
         46
       ],
@@ -486,12 +456,12 @@
     {
       "shape_id": 15,
       "tag": null,
-      "ocr_raw_text": "S",
+      "ocr_raw_text": "OG",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
-        965,
-        1546,
+        897,
+        1501,
         46,
         46
       ],
@@ -500,128 +470,8 @@
     },
     {
       "shape_id": 16,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        897,
-        1548,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-16"
-    },
-    {
-      "shape_id": 17,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        966,
-        1595,
-        46,
-        45
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-17"
-    },
-    {
-      "shape_id": 18,
-      "tag": null,
-      "ocr_raw_text": "4",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        965,
-        1594,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-18"
-    },
-    {
-      "shape_id": 19,
-      "tag": null,
-      "ocr_raw_text": "E",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        897,
-        1593,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-19"
-    },
-    {
-      "shape_id": 20,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        897,
-        1446,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-20"
-    },
-    {
-      "shape_id": 21,
-      "tag": null,
-      "ocr_raw_text": "3B",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        966,
-        1501,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-21"
-    },
-    {
-      "shape_id": 22,
-      "tag": null,
-      "ocr_raw_text": "-",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        965,
-        1501,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-22"
-    },
-    {
-      "shape_id": 23,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        897,
-        1501,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-23"
-    },
-    {
-      "shape_id": 24,
-      "tag": null,
-      "ocr_raw_text": "171D",
+      "tag": "WV-745",
+      "ocr_raw_text": "14-D25\n\nP\n\nWV-745-D5\n\nX\n\nI",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -630,28 +480,13 @@
         46,
         46
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-24"
+      "tag_confidence": "ocr_matched",
+      "id": "WV-745"
     },
     {
-      "shape_id": 25,
+      "shape_id": 17,
       "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        1405,
-        400,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-25"
-    },
-    {
-      "shape_id": 26,
-      "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "X\n\nCY",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -661,12 +496,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-26"
+      "id": "UNLABELED-P1-UNLABELED-17"
     },
     {
-      "shape_id": 27,
-      "tag": null,
-      "ocr_raw_text": "-",
+      "shape_id": 18,
+      "tag": "RV-6145",
+      "ocr_raw_text": "TO8RELIEFHEADER\n\n43\n\n8-RV-6145-A\n\n10-0600\n\n42\n\n41",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -675,13 +510,13 @@
         129,
         53
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-27"
+      "tag_confidence": "ocr_matched",
+      "id": "RV-6145"
     },
     {
-      "shape_id": 28,
+      "shape_id": 19,
       "tag": null,
-      "ocr_raw_text": "SE",
+      "ocr_raw_text": "O20\n\nN\n\nOWW\n\nO\n\nZO\n\nF\n\nO-",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -691,12 +526,27 @@
         63
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-28"
+      "id": "UNLABELED-P1-UNLABELED-19"
     },
     {
-      "shape_id": 29,
+      "shape_id": 20,
+      "tag": "V-745",
+      "ocr_raw_text": "SAEMESHPADS2S\n\nV-745",
+      "symbol_kind": "rectangle",
+      "component_type": "tank",
+      "bbox": [
+        1579,
+        446,
+        180,
+        37
+      ],
+      "tag_confidence": "ocr_matched",
+      "id": "V-745"
+    },
+    {
+      "shape_id": 21,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "C\n\n42\n\nWIM",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -706,19 +556,19 @@
         19
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P1-UNLABELED-29"
+      "id": "UNLABELED-P1-UNLABELED-21"
     },
     {
       "shape_id": 0,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "I",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
-        1226,
-        1372,
-        38,
-        42
+        921,
+        1502,
+        46,
+        46
       ],
       "tag_confidence": "unresolved",
       "id": "UNLABELED-P2-UNLABELED-0"
@@ -730,46 +580,16 @@
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
-        1221,
-        1480,
-        50,
-        41
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-1"
-    },
-    {
-      "shape_id": 2,
-      "tag": null,
-      "ocr_raw_text": "747",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        921,
-        1502,
-        46,
-        46
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-2"
-    },
-    {
-      "shape_id": 3,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
         921,
         1457,
         46,
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-3"
+      "id": "UNLABELED-P2-UNLABELED-1"
     },
     {
-      "shape_id": 4,
+      "shape_id": 2,
       "tag": null,
       "ocr_raw_text": "",
       "symbol_kind": "circle",
@@ -781,12 +601,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-4"
+      "id": "UNLABELED-P2-UNLABELED-2"
     },
     {
-      "shape_id": 5,
-      "tag": null,
-      "ocr_raw_text": "",
+      "shape_id": 3,
+      "tag": "MV-746-01",
+      "ocr_raw_text": "X23B2R\n\nMV-746-01",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -795,13 +615,13 @@
         46,
         46
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-5"
+      "tag_confidence": "ocr_matched",
+      "id": "MV-746-01"
     },
     {
-      "shape_id": 6,
+      "shape_id": 4,
       "tag": null,
-      "ocr_raw_text": "OC",
+      "ocr_raw_text": "F\n\n9\n\n10-92",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -811,12 +631,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-6"
+      "id": "UNLABELED-P2-UNLABELED-4"
     },
     {
-      "shape_id": 7,
+      "shape_id": 5,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "2-",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -826,12 +646,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-7"
+      "id": "UNLABELED-P2-UNLABELED-5"
     },
     {
-      "shape_id": 8,
+      "shape_id": 6,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "F\n\nTS",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -841,12 +661,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-8"
+      "id": "UNLABELED-P2-UNLABELED-6"
     },
     {
-      "shape_id": 9,
+      "shape_id": 7,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "777",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -856,12 +676,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-9"
+      "id": "UNLABELED-P2-UNLABELED-7"
     },
     {
-      "shape_id": 10,
+      "shape_id": 8,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "14S\n\n1",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -871,12 +691,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-10"
+      "id": "UNLABELED-P2-UNLABELED-8"
     },
     {
-      "shape_id": 11,
+      "shape_id": 9,
       "tag": null,
-      "ocr_raw_text": "1 3",
+      "ocr_raw_text": "OO",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -886,12 +706,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-11"
+      "id": "UNLABELED-P2-UNLABELED-9"
     },
     {
-      "shape_id": 12,
+      "shape_id": 10,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "Y",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -901,12 +721,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-12"
+      "id": "UNLABELED-P2-UNLABELED-10"
     },
     {
-      "shape_id": 13,
+      "shape_id": 11,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "CC",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -916,12 +736,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-13"
+      "id": "UNLABELED-P2-UNLABELED-11"
     },
     {
-      "shape_id": 14,
+      "shape_id": 12,
       "tag": null,
-      "ocr_raw_text": "3 C",
+      "ocr_raw_text": "3",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -931,12 +751,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-14"
+      "id": "UNLABELED-P2-UNLABELED-12"
     },
     {
-      "shape_id": 15,
+      "shape_id": 13,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "3",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -946,12 +766,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-15"
+      "id": "UNLABELED-P2-UNLABELED-13"
     },
     {
-      "shape_id": 16,
+      "shape_id": 14,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "T--\n\nXE\n\nMHL",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -961,12 +781,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-16"
+      "id": "UNLABELED-P2-UNLABELED-14"
     },
     {
-      "shape_id": 17,
+      "shape_id": 15,
       "tag": null,
-      "ocr_raw_text": "I 3",
+      "ocr_raw_text": "XE\n\nCO",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -976,12 +796,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-17"
+      "id": "UNLABELED-P2-UNLABELED-15"
     },
     {
-      "shape_id": 18,
+      "shape_id": 16,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "-\n\n-",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -991,12 +811,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-18"
+      "id": "UNLABELED-P2-UNLABELED-16"
     },
     {
-      "shape_id": 19,
+      "shape_id": 17,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "CO",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -1006,72 +826,12 @@
         46
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-19"
+      "id": "UNLABELED-P2-UNLABELED-17"
     },
     {
-      "shape_id": 20,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        921,
-        1384,
-        46,
-        45
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-20"
-    },
-    {
-      "shape_id": 21,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        1558,
-        1097,
-        45,
-        45
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-21"
-    },
-    {
-      "shape_id": 22,
-      "tag": null,
-      "ocr_raw_text": "Z",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        2559,
-        1358,
-        45,
-        45
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-22"
-    },
-    {
-      "shape_id": 23,
-      "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "circle",
-      "component_type": "instrument",
-      "bbox": [
-        2782,
-        1397,
-        45,
-        45
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-23"
-    },
-    {
-      "shape_id": 24,
-      "tag": null,
-      "ocr_raw_text": "7 4",
+      "shape_id": 18,
+      "tag": "MV-742",
+      "ocr_raw_text": "F5\n\n1-025\n\nMV-742\n\n-D2",
       "symbol_kind": "circle",
       "component_type": "instrument",
       "bbox": [
@@ -1080,28 +840,13 @@
         46,
         46
       ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-24"
+      "tag_confidence": "ocr_matched",
+      "id": "MV-742"
     },
     {
-      "shape_id": 25,
+      "shape_id": 20,
       "tag": null,
-      "ocr_raw_text": "",
-      "symbol_kind": "bowtie",
-      "component_type": "valve",
-      "bbox": [
-        2358,
-        788,
-        18,
-        341
-      ],
-      "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-25"
-    },
-    {
-      "shape_id": 26,
-      "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "I",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -1111,12 +856,12 @@
         27
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-26"
+      "id": "UNLABELED-P2-UNLABELED-20"
     },
     {
-      "shape_id": 27,
+      "shape_id": 21,
       "tag": null,
-      "ocr_raw_text": "FROM NSTRUME NT",
+      "ocr_raw_text": "T\n\nY\n\n4",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -1126,12 +871,12 @@
         53
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-27"
+      "id": "UNLABELED-P2-UNLABELED-21"
     },
     {
-      "shape_id": 28,
+      "shape_id": 22,
       "tag": null,
-      "ocr_raw_text": "",
+      "ocr_raw_text": "C\n\nAS2\n\n11ON",
       "symbol_kind": "bowtie",
       "component_type": "valve",
       "bbox": [
@@ -1141,37 +886,33 @@
         19
       ],
       "tag_confidence": "unresolved",
-      "id": "UNLABELED-P2-UNLABELED-28"
+      "id": "UNLABELED-P2-UNLABELED-22"
     }
   ],
   "edges": [
     {
-      "source": "UNLABELED-P0-UNLABELED-0",
-      "target": "UNLABELED-P0-UNLABELED-14"
+      "source": "V-715",
+      "target": "MV-115"
     },
     {
       "source": "UNLABELED-P0-UNLABELED-7",
-      "target": "UNLABELED-P0-UNLABELED-14"
+      "target": "MV-115"
     },
     {
       "source": "UNLABELED-P0-UNLABELED-9",
-      "target": "UNLABELED-P0-UNLABELED-15"
+      "target": "MV-71 (dup 3)"
     },
     {
-      "source": "UNLABELED-P1-UNLABELED-9",
-      "target": "UNLABELED-P1-UNLABELED-27"
+      "source": "UNLABELED-P1-UNLABELED-6",
+      "target": "RV-6145"
     },
     {
-      "source": "UNLABELED-P1-UNLABELED-19",
-      "target": "UNLABELED-P1-UNLABELED-20"
+      "source": "UNLABELED-P1-UNLABELED-12",
+      "target": "UNLABELED-P1-UNLABELED-13"
     },
     {
-      "source": "UNLABELED-P2-UNLABELED-0",
-      "target": "UNLABELED-P2-UNLABELED-1"
-    },
-    {
-      "source": "UNLABELED-P2-UNLABELED-25",
-      "target": "UNLABELED-P2-UNLABELED-26"
+      "source": "WV-745",
+      "target": "UNLABELED-P1-UNLABELED-17"
     }
   ]
 }

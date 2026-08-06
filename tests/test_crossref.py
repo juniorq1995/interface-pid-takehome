@@ -62,6 +62,25 @@ def test_cross_reference_type_and_connection_mismatch():
     assert "CONNECTION_MISMATCH" in categories
 
 
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.edge_case
+@pytest.mark.authored_claude_sonnet
+def test_cross_reference_no_false_type_mismatch_for_fine_grained_instrument_regression():
+    """Regression: coarse_category() used to only cover 11 of TAG_PREFIX_TYPES'
+    ~44 fine-grained values, identity-mapping the rest. A component correctly
+    classified as "pressure_indicator" (a real ISA subtype, PI- prefix) never
+    matched an SOP-declared "instrument", spuriously firing TYPE_MISMATCH on a
+    genuinely correct classification -- this pins that it no longer does."""
+    graph = nx.Graph()
+    _node(graph, "PI-715A", "pressure_indicator")
+
+    facts = SopFacts(referenced_tags={"PI-715A"}, declared_types={"PI-715A": "instrument"})
+
+    findings = cross_reference(graph, facts)
+    assert "TYPE_MISMATCH" not in {f.category for f in findings}
+
+
 @pytest.mark.unit
 @pytest.mark.edge_case
 @pytest.mark.authored_claude_sonnet

@@ -25,6 +25,7 @@ import fitz
 import numpy as np
 
 from src.pid_extraction.shape_detection import DetectedShape
+from src.pid_extraction.vector_lines import _to_pixel
 
 MIN_ASPECT, MAX_ASPECT = 0.7, 1.4
 # (min_pt, max_pt) bands, calibrated as described above.
@@ -33,6 +34,26 @@ SYMBOL_SIZE_BANDS_PT = [(14.0, 20.0)]
 
 def _in_any_band(value: float, bands: list[tuple[float, float]]) -> bool:
     return any(lo <= value <= hi for lo, hi in bands)
+
+
+def _is_closed_curve_loop(items: list[tuple]) -> bool:
+    """Real bug found and fixed: this detector's docstring claims it targets
+    "closed vector paths", but the size/aspect filter alone doesn't check that
+    -- any open path, digit glyph, or unrelated line/curve pair landing in the
+    calibrated size band would false-positive as an instrument bubble, unlike
+    every sibling detector in this package (vector_valves.py, vector_noise.py),
+    which all check item-type composition before trusting a bbox.
+
+    get_drawings()'s own `closePath` flag doesn't reflect this (verified against
+    the real document: False on every genuine circle, because the final curve's
+    endpoint already coincides with the first curve's start, so the PDF content
+    stream never emits an explicit closepath operator) -- so closure is checked
+    geometrically: every item must be a bezier curve, and the loop's start and
+    end points must coincide."""
+    if not items or {it[0] for it in items} != {"c"}:
+        return False
+    start, end = items[0][1], items[-1][-1]
+    return abs(start.x - end.x) < 0.5 and abs(start.y - end.y) < 0.5
 
 
 def extract_circle_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int = 300) -> list[DetectedShape]:
@@ -49,7 +70,6 @@ def extract_circle_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int =
             raise ValueError(f"Requested page {page_index}, PDF only has {doc.page_count} page(s)")
         page = doc[page_index]
         rotation_matrix = page.rotation_matrix
-        scale = dpi / 72
 
         shapes = []
         for d in page.get_drawings():
@@ -63,10 +83,15 @@ def extract_circle_symbols(pdf_path: str | Path, page_index: int = 0, dpi: int =
                 continue
             if not _in_any_band(max(r.width, r.height), SYMBOL_SIZE_BANDS_PT):
                 continue
+            if not _is_closed_curve_loop(d["items"]):
+                continue
 
-            corners = [fitz.Point(r.x0, r.y0) * rotation_matrix, fitz.Point(r.x1, r.y1) * rotation_matrix]
-            xs = [p.x * scale for p in corners]
-            ys = [p.y * scale for p in corners]
+            corners = [
+                _to_pixel(fitz.Point(r.x0, r.y0), rotation_matrix, dpi),
+                _to_pixel(fitz.Point(r.x1, r.y1), rotation_matrix, dpi),
+            ]
+            xs = [p[0] for p in corners]
+            ys = [p[1] for p in corners]
             x0, x1 = sorted(xs)
             y0, y1 = sorted(ys)
             bbox = (int(x0), int(y0), int(x1 - x0), int(y1 - y0))
